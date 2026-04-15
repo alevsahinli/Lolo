@@ -1,0 +1,2205 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="theme-color" content="#0B0E14"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Cango"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<link rel="manifest" href="#" id="pwa-manifest"/>
+<title>Cango – Stundenzettel</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0B0E14;--surf:#131820;--card:#1A2030;
+  --bor:#252E3F;
+  --acc:#F0A500;--acc2:rgba(240,165,0,.12);
+  --grn:#22C55E;--grn2:rgba(34,197,94,.1);
+  --red:#EF4444;--red2:rgba(239,68,68,.1);
+  --blu:#3B82F6;--blu2:rgba(59,130,246,.1);
+  --pur:#A78BFA;--pur2:rgba(167,139,250,.1);
+  --txt:#D4DCE8;--mut:#6B7A94;--dim:#3D4F68;
+  --sans:'Syne',system-ui,sans-serif;
+  --mono:'JetBrains Mono',monospace;
+}
+html,body{height:100%;background:var(--bg);color:var(--txt);font-family:var(--sans)}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--surf)}
+::-webkit-scrollbar-thumb{background:var(--bor);border-radius:3px}
+button{cursor:pointer;border:none;font-family:var(--sans);transition:opacity .15s}
+button:hover{opacity:.82}
+input,select{outline:none;font-family:var(--mono);color:var(--txt)}
+select option{background:var(--card)}
+#app{display:flex;height:100vh;overflow:hidden}
+
+/* SIDEBAR */
+#sb{width:218px;background:var(--surf);border-right:1px solid var(--bor);display:flex;flex-direction:column;flex-shrink:0}
+#sb-top{padding:14px 14px 12px;border-bottom:1px solid var(--bor);display:flex;align-items:center;gap:10px}
+#sb-top svg{width:44px;height:44px;flex-shrink:0}
+.bt-co{font-family:var(--mono);font-size:8px;color:var(--acc);letter-spacing:3px;font-weight:600}
+.bt-nm{font-weight:800;font-size:15px;letter-spacing:-.3px}
+.bt-sb{font-family:var(--mono);font-size:9px;color:var(--mut);margin-top:1px}
+#sb-nav{flex:1;padding:10px 8px;display:flex;flex-direction:column;gap:2px}
+.nb{display:flex;align-items:center;gap:9px;width:100%;padding:9px 11px;border-radius:8px;background:transparent;color:var(--mut);font-size:13px;font-weight:500;border:1px solid transparent;text-align:left}
+.nb.on{background:var(--acc2);color:var(--acc);font-weight:700;border-color:rgba(240,165,0,.3)}
+.ni{font-size:15px;width:18px;text-align:center}
+#sb-foot{padding:12px 14px;border-top:1px solid var(--bor)}
+.sf-r{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+.sf-l{font-family:var(--mono);font-size:9px;color:var(--mut);letter-spacing:1px}
+.sf-v{font-family:var(--mono);font-size:13px;font-weight:700}
+#api-btn{width:100%;margin-top:8px;padding:6px;border-radius:6px;font-family:var(--mono);font-size:10px;background:transparent;border:1px solid var(--bor);cursor:pointer}
+
+/* MAIN */
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+#topbar{background:var(--surf);border-bottom:1px solid var(--bor);height:50px;padding:0 18px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.tl{display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px}
+.tr{display:flex;gap:7px;align-items:center}
+.tr select{background:var(--card);border:1px solid var(--bor);color:var(--txt);padding:5px 9px;border-radius:6px;font-size:11px}
+#content{flex:1;overflow:auto;padding:18px}
+.page{display:none}.page.on{display:block}
+
+/* STAT GRID */
+.sg{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
+.sc{background:var(--card);border:1px solid var(--bor);border-radius:11px;padding:14px 16px;border-top-width:2px}
+.sc .si{font-size:18px;margin-bottom:7px}
+.sc .sv{font-family:var(--mono);font-size:22px;font-weight:700}
+.sc .sl{font-size:11px;color:var(--mut);margin-top:2px}
+.sc .ss{font-size:10px;font-family:var(--mono);margin-top:1px;opacity:.85}
+.dg{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px}
+.dc{background:var(--card);border:1px solid var(--bor);border-radius:9px;padding:11px 13px}
+
+/* BUTTONS */
+.ba{background:var(--acc);color:#000;padding:8px 16px;border-radius:7px;font-weight:800;font-size:12px}
+.bg{background:var(--card);color:var(--txt);padding:7px 14px;border-radius:7px;font-weight:600;font-size:12px;border:1px solid var(--bor)}
+.bsm{background:transparent;border:1px solid var(--bor);color:var(--mut);padding:3px 9px;border-radius:5px;font-size:10px;font-family:var(--mono);cursor:pointer}
+.br{background:var(--red2);border:1px solid rgba(239,68,68,.4);color:var(--red);padding:6px 11px;border-radius:6px;font-family:var(--mono);font-weight:700;font-size:12px}
+.bam{background:var(--acc2);border:1px solid rgba(240,165,0,.4);color:var(--acc);padding:6px 11px;border-radius:6px;font-family:var(--mono);font-weight:700;font-size:12px}
+.bb{background:var(--blu2);border:1px solid rgba(59,130,246,.4);color:var(--blu);padding:6px 11px;border-radius:6px;font-family:var(--mono);font-size:11px}
+.bp{background:var(--pur2);border:1px solid rgba(167,139,250,.4);color:var(--pur);padding:8px 16px;border-radius:7px;font-weight:800;font-size:13px}
+
+/* INPUTS */
+.fi{width:100%;background:var(--surf);border:1px solid var(--bor);color:var(--txt);padding:7px 10px;border-radius:6px;font-family:var(--mono);font-size:12px}
+.fi:focus{border-color:rgba(240,165,0,.5)}
+.fl{font-family:var(--mono);font-size:9px;color:var(--mut);letter-spacing:1.5px;margin-bottom:4px}
+
+/* TABLE */
+.tw{background:var(--card);border:1px solid var(--bor);border-radius:11px;overflow:hidden}
+table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px}
+thead th{padding:8px 12px;text-align:left;font-size:9px;color:var(--mut);letter-spacing:1.5px;font-weight:700;border-bottom:1px solid var(--bor);background:var(--surf)}
+tbody tr:nth-child(even){background:var(--surf)}
+tbody tr:nth-child(odd){background:var(--card)}
+tbody tr{border-bottom:1px solid rgba(37,46,63,.25)}
+td{padding:7px 12px}
+tr.rw td{color:var(--txt)}
+tr.rk{background:#2A1010!important}tr.rk td{color:#F87171}
+tr.rh{background:#0F1430!important}tr.rh td{color:#93C5FD}
+tr.ro td{color:var(--dim)}
+tfoot tr{background:#1F3864!important;border-top:2px solid var(--bor)}
+tfoot td{padding:11px 14px;color:#fff;font-weight:800;font-family:var(--sans);font-size:12px}
+.tot{font-family:var(--mono);font-size:20px;font-weight:700;color:var(--acc);text-align:right;padding-right:16px}
+
+/* PLANUNG */
+#pw{display:grid;grid-template-columns:210px 1fr;gap:14px;height:calc(100vh - 50px - 36px);overflow:hidden}
+#dl{background:var(--card);border:1px solid var(--bor);border-radius:11px;overflow:auto;padding:10px;display:flex;flex-direction:column;gap:2px}
+.dli{padding:7px 9px;border-radius:7px;cursor:pointer;border:1px solid transparent}
+.dli:hover{background:rgba(240,165,0,.06)}
+.dli.on{background:var(--acc2);border-color:rgba(240,165,0,.3)}
+.dlin{font-weight:600;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dlis{display:flex;justify-content:space-between;margin-top:2px}
+#pa{overflow:auto;display:flex;flex-direction:column;gap:10px}
+.cb{background:var(--card);border:1px solid var(--bor);border-radius:11px;padding:14px;flex-shrink:0}
+.tag-r{font-family:var(--mono);font-size:9px;background:var(--red2);color:var(--red);padding:2px 6px;border-radius:4px;cursor:pointer;display:inline-block;margin:2px}
+.tag-a{font-family:var(--mono);font-size:9px;background:var(--acc2);color:var(--acc);padding:2px 6px;border-radius:4px;cursor:pointer;display:inline-block;margin:2px}
+.wb{background:var(--red2);border:1px solid rgba(239,68,68,.35);border-radius:9px;padding:10px 13px;flex-shrink:0}
+.es{background:var(--card);border:2px dashed var(--bor);border-radius:12px;padding:50px 0;text-align:center;flex-shrink:0}
+
+/* MH GRID */
+.mhg{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1px;background:var(--bor)}
+.mhc{background:var(--card);padding:12px 14px}
+.mhi{background:var(--surf);border:1px solid var(--bor);color:var(--txt);padding:5px 7px;border-radius:5px;font-family:var(--mono);font-size:13px;font-weight:700;text-align:center;width:100%}
+.mhi.set{border-color:rgba(240,165,0,.5)!important;color:var(--acc)!important}
+.adj{background:var(--surf);border:1px solid var(--bor);color:var(--txt);width:26px;height:26px;border-radius:5px;font-size:15px;font-weight:700;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+
+/* DOK UPLOAD BOX */
+.dok-box{background:var(--card);border:1px solid var(--bor);border-radius:11px;padding:16px}
+.dok-upload{background:var(--pur2);border:2px dashed rgba(167,139,250,.4);border-radius:10px;padding:20px;text-align:center}
+
+/* MODAL */
+#mo{position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;z-index:999}
+#mo.on{display:flex}
+#md{background:var(--card);border:1px solid var(--bor);border-radius:14px;padding:24px;width:370px}
+#md h3{font-weight:800;font-size:16px;margin-bottom:16px}
+.mf{margin-bottom:11px}
+.mck{display:flex;align-items:center;gap:9px;padding:9px 11px;background:var(--surf);border-radius:7px;border:1px solid var(--bor);margin-bottom:16px}
+
+/* UTILS */
+.row{display:flex;gap:8px;align-items:center;margin-bottom:16px}
+.slbl{font-family:var(--mono);font-size:9px;color:var(--mut);letter-spacing:2px;margin-bottom:8px}
+.pill{font-family:var(--mono);font-size:10px;padding:3px 9px;border-radius:5px}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- SIDEBAR -->
+<aside id="sb">
+  <div id="sb-top">
+    <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="200" cy="200" r="195" fill="#0B0E14"/>
+      <circle cx="200" cy="200" r="188" fill="none" stroke="#F0A500" stroke-width="2.5"/>
+      <rect x="125" y="88" width="150" height="188" rx="14" fill="#1A2030"/>
+      <polygon points="233,88 275,130 233,130" fill="#0B0E14"/>
+      <polyline points="233,88 233,130 275,130" fill="none" stroke="#F0A500" stroke-width="2"/>
+      <rect x="142" y="157" width="72" height="12" rx="3" fill="#F0A500" opacity="0.9"/>
+      <rect x="142" y="177" width="88" height="12" rx="3" fill="#F0A500" opacity="0.65"/>
+      <rect x="142" y="197" width="58" height="12" rx="3" fill="#22C55E" opacity="0.8"/>
+      <rect x="142" y="217" width="78" height="12" rx="3" fill="#F0A500" opacity="0.55"/>
+      <rect x="142" y="237" width="65" height="12" rx="3" fill="#F0A500" opacity="0.45"/>
+      <circle cx="272" cy="248" r="42" fill="#0B0E14"/>
+      <circle cx="272" cy="248" r="36" fill="#131820"/>
+      <circle cx="272" cy="248" r="36" fill="none" stroke="#F0A500" stroke-width="2.5"/>
+      <line x1="272" y1="215" x2="272" y2="221" stroke="#3D4F68" stroke-width="2" stroke-linecap="round"/>
+      <line x1="272" y1="275" x2="272" y2="281" stroke="#3D4F68" stroke-width="2" stroke-linecap="round"/>
+      <line x1="239" y1="248" x2="245" y2="248" stroke="#3D4F68" stroke-width="2" stroke-linecap="round"/>
+      <line x1="299" y1="248" x2="305" y2="248" stroke="#3D4F68" stroke-width="2" stroke-linecap="round"/>
+      <line x1="272" y1="248" x2="272" y2="228" stroke="#F0A500" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="272" y1="248" x2="289" y2="256" stroke="#D4DCE8" stroke-width="2" stroke-linecap="round"/>
+      <circle cx="272" cy="248" r="3.5" fill="#F0A500"/>
+      <circle cx="145" cy="102" r="18" fill="#22C55E" opacity="0.12"/>
+      <circle cx="145" cy="102" r="18" fill="none" stroke="#22C55E" stroke-width="1.8"/>
+      <polyline points="136,102 143,110 156,94" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <div>
+      <div class="bt-co">CANGO</div>
+      <div class="bt-nm">Stundenzettel</div>
+      <div class="bt-sb">Admin · NRW · 2026</div>
+    </div>
+  </div>
+  <nav id="sb-nav">
+    <button class="nb on" data-pg="dashboard"><span class="ni">◈</span>Dashboard</button>
+    <button class="nb" data-pg="fahrer"><span class="ni">⬡</span>Fahrer</button>
+    <button class="nb" data-pg="planung"><span class="ni">▦</span>Monatsplanung</button>
+    <button class="nb" data-pg="dokumente"><span class="ni">◧</span>Dokumente</button>
+  </nav>
+  <div id="sb-foot">
+    <div class="sf-r"><span class="sf-l">MINDESTLOHN 2026</span><span class="sf-v" style="color:var(--grn)">13,90 €</span></div>
+    <div class="sf-r"><span class="sf-l">KI-AUSWERTUNG</span><span id="api-lbl" style="font-family:var(--mono);font-size:10px"></span></div>
+    <button id="api-btn" onclick="doApiKey()">🔑 API-Key verwalten</button>
+    <div style="display:flex;gap:4px;margin-top:6px">
+      <button onclick="exportBackup()" style="flex:1;background:transparent;border:1px solid var(--bor);color:var(--mut);padding:5px;border-radius:5px;font-family:var(--mono);font-size:9px;cursor:pointer" title="Backup herunterladen">💾 Backup</button>
+      <button onclick="importBackup()" style="flex:1;background:transparent;border:1px solid var(--bor);color:var(--mut);padding:5px;border-radius:5px;font-family:var(--mono);font-size:9px;cursor:pointer" title="Backup laden">📂 Laden</button>
+    </div>
+    <div id="save-lbl" style="font-family:var(--mono);font-size:8px;color:var(--dim);margin-top:4px;text-align:center"></div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main id="main">
+  <header id="topbar">
+    <div class="tl">
+      <span id="pg-ico" style="color:var(--acc);font-size:17px">◈</span>
+      <span id="pg-lbl">Dashboard</span>
+    </div>
+    <div class="tr">
+      <span id="wp" class="pill" style="display:none;color:var(--red);background:var(--red2)"></span>
+      <select id="sm"></select>
+      <select id="sy">
+        <option value="2025">2025</option>
+        <option value="2026" selected>2026</option>
+        <option value="2027">2027</option>
+      </select>
+    </div>
+  </header>
+
+  <div id="content">
+
+    <!-- DASHBOARD -->
+    <div id="p-dashboard" class="page on">
+      <div class="sg" id="sgrid"></div>
+      <div class="row">
+        <button class="ba" onclick="genAll()">⚡ Alle generieren</button>
+        <button class="bg" onclick="goPage('planung')">▦ Zur Planung</button>
+      </div>
+      <div class="slbl">FAHRERSTATUS</div>
+      <div class="dg" id="dgrid"></div>
+    </div>
+
+    <!-- FAHRER -->
+    <div id="p-fahrer" class="page">
+      <div style="background:var(--card);border:1px solid var(--bor);border-radius:11px;margin-bottom:16px;overflow:hidden">
+        <div style="background:var(--surf);padding:10px 15px;border-bottom:1px solid var(--bor);display:flex;align-items:center;justify-content:space-between">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="color:var(--acc);font-size:15px">▦</span>
+            <span style="font-weight:800;font-size:13px">Monatsstunden <span id="mh-lbl" style="color:var(--mut);font-family:var(--mono);font-size:11px"></span></span>
+          </div>
+          <span style="font-family:var(--mono);font-size:9px;color:var(--dim)">Zahl eingeben · +10 addiert · -5 zieht ab</span>
+        </div>
+        <div class="mhg" id="mhgrid"></div>
+      </div>
+      <div class="row">
+        <div class="slbl" style="margin:0">FAHRERSTAMMDATEN</div>
+        <button class="ba" style="margin-left:auto;font-size:11px;padding:7px 13px" onclick="document.getElementById('mo').classList.add('on')">+ Neuer Fahrer</button>
+      </div>
+      <div class="tw">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th><th>Name</th><th>Brutto/Mo.</th>
+              <th>Stundenlohn</th><th>Max-Std. global</th>
+              <th>Kein Sa</th><th>Tage/Wo.</th><th>Ist-Std.</th><th>Status</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="ftb"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- PLANUNG -->
+    <div id="p-planung" class="page">
+      <div id="pw">
+        <div id="dl">
+          <div style="font-family:var(--mono);font-size:9px;color:var(--mut);letter-spacing:2px;margin-bottom:6px;padding-bottom:8px;border-bottom:1px solid var(--bor)">FAHRER</div>
+          <div id="dli-wrap"></div>
+          <div style="margin-top:auto;padding-top:8px;border-top:1px solid var(--bor)">
+            <button class="ba" style="width:100%;padding:8px;font-size:11px" onclick="genAll()">⚡ Alle generieren</button>
+          </div>
+        </div>
+        <div id="pa">
+          <div class="es">
+            <div style="font-size:32px;color:var(--dim);margin-bottom:10px">⬡</div>
+            <div style="color:var(--mut);font-size:14px;font-weight:600">Fahrer auswählen</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DOKUMENTE -->
+    <div id="p-dokumente" class="page">
+
+      <!-- U1 + BLITZER -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
+
+        <div class="dok-box" style="border-top:2px solid var(--red)">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+            <span style="color:var(--red);font-size:16px">♥</span>
+            <span style="font-weight:800;font-size:13px">U1-Krankmeldung</span>
+          </div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--mut);padding:8px 10px;background:var(--red2);border-radius:6px;margin-bottom:10px">
+            Fahrer + Zeitraum → alle Kranktage automatisch eingetragen.
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+            <div>
+              <div class="fl">FAHRER</div>
+              <select class="fi" id="u1-dr" style="background:var(--surf)">
+                <option value="">– wählen –</option>
+              </select>
+            </div>
+            <div>
+              <div class="fl">ERSTER TAG GEARBEITET?</div>
+              <select class="fi" id="u1-et" style="background:var(--surf)">
+                <option value="nein">Nein – krank ab Tag 1</option>
+                <option value="ja">Ja – am 1. Tag noch gearbeitet</option>
+              </select>
+            </div>
+            <div>
+              <div class="fl">KRANK VON</div>
+              <input class="fi" id="u1-von" placeholder="2026-03-01" type="date"/>
+            </div>
+            <div>
+              <div class="fl">KRANK BIS</div>
+              <input class="fi" id="u1-bis" placeholder="2026-03-31" type="date"/>
+            </div>
+          </div>
+          <button class="ba" style="width:100%;padding:9px" onclick="applyU1()">♥ Übernehmen &amp; Pläne aktualisieren</button>
+        </div>
+
+        <div class="dok-box" style="border-top:2px solid var(--acc)">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+            <span style="color:var(--acc);font-size:16px">⚡</span>
+            <span style="font-weight:800;font-size:13px">Blitzerbescheid</span>
+          </div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--mut);padding:8px 10px;background:var(--acc2);border-radius:6px;margin-bottom:10px">
+            Tag wird als Pflicht-Arbeitstag gesetzt. Plan sofort neu berechnet.
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+            <div>
+              <div class="fl">FAHRER</div>
+              <select class="fi" id="bz-dr" style="background:var(--surf)">
+                <option value="">– wählen –</option>
+              </select>
+            </div>
+            <div>
+              <div class="fl">DATUM</div>
+              <input class="fi" id="bz-dat" type="date"/>
+            </div>
+          </div>
+          <button class="bam" style="width:100%;padding:9px;font-family:var(--sans);font-weight:800;font-size:12px" onclick="applyBz()">⚡ Übernehmen</button>
+        </div>
+
+      </div>
+
+      <!-- KI SCAN -->
+      <div class="dok-box" style="border-top:2px solid var(--pur);margin-bottom:16px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <span style="color:var(--pur);font-size:16px">◈</span>
+          <span style="font-weight:800;font-size:13px">Dokument per KI auswerten</span>
+          <span style="font-family:var(--mono);font-size:9px;color:var(--pur);background:var(--pur2);padding:2px 7px;border-radius:4px;border:1px solid rgba(167,139,250,.3)">KI</span>
+        </div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--mut);margin-bottom:12px">
+          U1-Erstattungsumlage oder Lohnabrechnung hochladen → KI liest Fahrer, Zeitraum und Daten aus.
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+          <label style="cursor:pointer">
+            <input type="radio" name="doctyp" value="u1" checked style="display:none" id="dt-u1"/>
+            <div onclick="document.getElementById('dt-u1').checked=true;updateDocTypStyle()" id="dt-u1-btn"
+              style="padding:10px 14px;border-radius:8px;border:2px solid rgba(239,68,68,.5);background:rgba(239,68,68,.12);display:flex;align-items:center;gap:8px;transition:all .15s">
+              <span style="font-size:16px">♥</span>
+              <div>
+                <div style="font-weight:800;font-size:12px;color:#EF4444">U1 / Krankmeldung</div>
+                <div style="font-family:var(--mono);font-size:9px;color:var(--mut)">Krankheitszeitraum</div>
+              </div>
+            </div>
+          </label>
+          <label style="cursor:pointer">
+            <input type="radio" name="doctyp" value="lohn" style="display:none" id="dt-lohn"/>
+            <div onclick="document.getElementById('dt-lohn').checked=true;updateDocTypStyle()" id="dt-lohn-btn"
+              style="padding:10px 14px;border-radius:8px;border:2px solid var(--bor);background:transparent;display:flex;align-items:center;gap:8px;transition:all .15s">
+              <span style="font-size:16px">◉</span>
+              <div>
+                <div style="font-weight:800;font-size:12px;color:#3B82F6">Lohnabrechnung</div>
+                <div style="font-family:var(--mono);font-size:9px;color:var(--mut)">Brutto, Stunden, Lohn</div>
+              </div>
+            </div>
+          </label>
+        </div>
+
+        <!-- FILE INPUT — direkt sichtbar, kein JS-Trick -->
+        <input type="file" id="doc-input" accept=".jpg,.jpeg,.png,.pdf"
+          style="display:block;width:100%;background:var(--pur2);border:2px dashed rgba(167,139,250,.5);border-radius:10px;padding:16px;color:var(--pur);font-family:var(--mono);font-size:12px;cursor:pointer"/>
+
+        <div style="font-family:var(--mono);font-size:9px;color:var(--dim);margin-top:6px;text-align:center">JPG, PNG, PDF werden akzeptiert</div>
+        <div id="ai-res" style="margin-top:10px"></div>
+      </div>
+
+      <!-- LOG -->
+      <div id="dok-log"></div>
+
+    </div>
+  </div>
+</main>
+</div>
+
+<!-- MODAL NEUER FAHRER -->
+<div id="mo">
+  <div id="md">
+    <h3>Fahrer anlegen</h3>
+    <div class="mf">
+      <div class="fl">NAME</div>
+      <input class="fi" id="mn" placeholder="Vorname Nachname"/>
+    </div>
+    <div class="mf">
+      <div class="fl">BRUTTOGEHALT (€/MONAT)</div>
+      <input class="fi" type="number" id="mb" placeholder="z.B. 1200"/>
+      <div id="mhint" style="font-family:var(--mono);font-size:9px;color:var(--mut);margin-top:3px"></div>
+    </div>
+    <div class="mf">
+      <div class="fl">STUNDENLOHN (€) — leer = 13,90 Mindestlohn</div>
+      <input class="fi" type="number" step="0.1" id="mw" placeholder="13,90"/>
+    </div>
+    <div class="mf">
+      <div class="fl">TAGE PRO WOCHE</div>
+      <select class="fi" id="mdw" style="background:var(--surf)">
+        <option value="2">2 Tage/Woche</option>
+        <option value="3">3 Tage/Woche</option>
+        <option value="4">4 Tage/Woche</option>
+        <option value="5" selected>5 Tage/Woche</option>
+        <option value="6">6 Tage/Woche (Mo–Sa)</option>
+      </select>
+    </div>
+    <div class="mck">
+      <input type="checkbox" id="mns" style="width:15px;height:15px;accent-color:var(--acc)"/>
+      <label for="mns" style="font-size:12px;cursor:pointer">Kein Samstag (Mo–Fr)</label>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="ba" style="flex:1;padding:9px" onclick="addDriver()">Anlegen</button>
+      <button class="bg" style="flex:1;padding:9px" onclick="document.getElementById('mo').classList.remove('on')">Abbrechen</button>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ════════════════════════════════════════
+// CONSTANTS
+// ════════════════════════════════════════
+var ML = 13.90;
+var STARTS = [7, 7.5, 8, 8.5, 9, 9.5, 10];
+var PAUSES = [30, 45, 60];
+var MN = ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
+var WD = ["Sonntag","Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag"];
+var FT = {
+  "2026-01-01":"Neujahr","2026-04-03":"Karfreitag","2026-04-06":"Ostermontag",
+  "2026-05-01":"Tag der Arbeit","2026-05-14":"Christi Himmelfahrt",
+  "2026-05-25":"Pfingstmontag","2026-06-04":"Fronleichnam",
+  "2026-10-03":"Tag der Einheit","2026-11-01":"Allerheiligen",
+  "2026-12-25":"1. Weihnachtstag","2026-12-26":"2. Weihnachtstag"
+};
+var PICONS = {dashboard:"◈", fahrer:"⬡", planung:"▦", dokumente:"◧"};
+var PLBLS = {dashboard:"Dashboard", fahrer:"Fahrer", planung:"Monatsplanung", dokumente:"Dokumente"};
+
+// ════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════
+var S = {
+  pg: "dashboard", yr: 2026, mo: 4, sel: null,
+  dr: [
+    {id:1,  n:"Adnan Alhashoum",   b:800,  w:null, ns:false, dw:5, on:true, mh:null},
+    {id:2,  n:"Faisal Ali",        b:1240, w:null, ns:false, dw:3, on:true, mh:null},
+    {id:3,  n:"Mohammad Ali",      b:2370, w:null, ns:false, dw:5, on:true, mh:null},
+    {id:4,  n:"Mohannad Ali",      b:940,  w:null, ns:true,  dw:4, on:true, mh:null},
+    {id:5,  n:"Alaa Alkhubi",      b:1270, w:null, ns:false, dw:5, on:true, mh:null},
+    {id:6,  n:"Mohammed Alothman", b:904,  w:null, ns:false, dw:4, on:true, mh:null},
+    {id:7,  n:"Abdul Aziz Daoud",  b:1845, w:null, ns:false, dw:5, on:true, mh:null},
+    {id:8,  n:"Sibel Gösen",       b:603,  w:null, ns:false, dw:3, on:true, mh:null},
+    {id:9,  n:"Talat Gösen",       b:2700, w:null, ns:false, dw:6, on:true, mh:null},
+    {id:10, n:"Abdulhamid Hame",   b:2370, w:null, ns:false, dw:5, on:true, mh:null},
+    {id:11, n:"Ibrahim Hasan",     b:2370, w:null, ns:false, dw:5, on:true, mh:null},
+    {id:12, n:"Ali Mohamad",       b:1250, w:null, ns:false, dw:4, on:true, mh:null}
+  ],
+  pl: {}, sk: {}, bz: {}, tg: {}, dh: {}, me: {},
+  u1: [], bzLog: [], lohnLog: []
+};
+
+// ════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════
+function G(id) { return document.getElementById(id); }
+
+function E(s) {
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+function pk(id, y, m) { return id + "_" + y + "_" + m; }
+
+function getWage(d) { return (d.w && +d.w > 0) ? +d.w : ML; }
+
+function autoH(d) { return Math.round(d.b / getWage(d) * 10) / 10; }
+
+function effH(d) { return (d.mh != null) ? +d.mh : autoH(d); }
+
+function moH(d, y, m) {
+  var k = pk(d.id, y, m);
+  return (S.tg[k] != null) ? S.tg[k] : effH(d);
+}
+
+function hm(h) {
+  var hh = Math.floor(h);
+  var mm = Math.round((h - hh) * 60);
+  return (hh < 10 ? "0" : "") + hh + ":" + (mm < 10 ? "0" : "") + mm;
+}
+
+function r15(h) { return Math.round(h * 4) / 4; }
+
+function daysInMonth(y, m) { return new Date(y, m, 0).getDate(); }
+
+function dateStr(y, m, d) {
+  var mm = m < 10 ? "0" + m : "" + m;
+  var dd = d < 10 ? "0" + d : "" + d;
+  return y + "-" + mm + "-" + dd;
+}
+
+function getDow(y, m, d) { return new Date(y, m - 1, d).getDay(); }
+
+function clamp(v, a, b) { return Math.min(Math.max(v, a), b); }
+
+function rng(seed) {
+  var s = ((seed ^ 0xDEADBEEF) >>> 0) || 1;
+  return function() {
+    s ^= s << 13; s ^= s >>> 17; s ^= s << 5;
+    return (s >>> 0) / 4294967295;
+  };
+}
+
+// ════════════════════════════════════════
+// SCHEDULE ENGINE
+// ════════════════════════════════════════
+function genSched(dr, yr, mo) {
+  var R = rng(dr.id * 100000 + yr * 100 + mo);
+  var maxH = effH(dr);
+  var targetH = moH(dr, yr, mo);
+  var autoRand = (targetH === maxH) ? 0.87 + R() * 0.06 : 1;
+  var target = parseFloat((targetH * autoRand).toFixed(1));
+
+  var sick = S.sk[pk(dr.id, yr, mo)] || [];
+  var blitz = S.bz[pk(dr.id, yr, mo)] || [];
+  var total = daysInMonth(yr, mo);
+  var all = [];
+
+  // workTarget = target direkt (KEINE Vorab-Reduktion durch EFZ-Schätzung)
+  // Kranktage sind in avail nicht enthalten → werden automatisch nicht eingeplant
+  // EFZ wird am Ende separat berechnet und zum Gesamt addiert (gedeckelt auf maxH)
+  var workTarget = target;
+
+  for (var d = 1; d <= total; d++) {
+    var date = dateStr(yr, mo, d);
+    var wd = getDow(yr, mo, d);
+    var isSick = sick.indexOf(date) >= 0;
+    var isBlitz = blitz.indexOf(date) >= 0;
+    var isSun = wd === 0;
+    var isSat = wd === 6;
+    var isHol = !!FT[date];
+    var st = "ok";
+    if (isSick) st = "sick";
+    else if (isHol) st = "hol";
+    else if (isSun) st = "sun";
+    else if (isSat && dr.ns) st = "nosat";
+    all.push({d:d, date:date, wd:wd, st:st, isSick:isSick, isBlitz:isBlitz, isHol:isHol, isSun:isSun, isSat:isSat});
+  }
+
+  var avail = all.filter(function(x) { return x.st === "ok" || (x.isBlitz && !x.isSick); });
+  var mustArr = all.filter(function(x) { return x.isBlitz && !x.isSick; });
+  var must = {};
+  mustArr.forEach(function(x) { must[x.date] = true; });
+
+  // Tage/Woche Einstellung bestimmt wie viele Tage pro Woche eingeplant werden
+  var dwSched = dr.dw || 5;
+  var maxDPW = dr.ns ? 5 : 6;
+
+  // Erwartete Stunden pro Arbeitstag aus dem Monatsziel
+  // Stunden/Monat ÷ (dw × 4.33 Wochen) ergibt den Tagesdurchschnitt
+  var weeksInMonth = 4.33;
+  var expectedDailyH = parseFloat((workTarget / Math.max(dwSched * weeksInMonth, 1)).toFixed(2));
+  // Zwischen 3h und 8h klemmen — realistischer Bereich
+  expectedDailyH = Math.min(Math.max(expectedDailyH, 3), 8);
+
+  // Anzahl benötigter Arbeitstage = Monatsziel ÷ Tagesdurchschnitt
+  var need = clamp(Math.ceil(workTarget / expectedDailyH), mustArr.length, avail.length);
+
+  var ws = {};
+  mustArr.forEach(function(x) { ws[x.date] = true; });
+
+  // GLEICHMÄSSIGE Verteilung: jeden K-ten verfügbaren Tag nehmen
+  var pool = avail.filter(function(x) { return !ws[x.date]; });
+  var remaining = need - Object.keys(ws).length;
+  if (remaining > 0 && pool.length > 0) {
+    if (remaining >= pool.length) {
+      // Alle verfügbaren Tage nehmen
+      pool.forEach(function(x) { ws[x.date] = true; });
+    } else {
+      // Gleichmäßig verteilen: Schritt = pool.length / remaining
+      var step = pool.length / remaining;
+      // Zufälliger Startversatz (0 bis step) für natürliche Variation
+      var offset = R() * step;
+      for (var ei = 0; ei < remaining; ei++) {
+        var idx = Math.floor(offset + ei * step);
+        if (idx < pool.length) ws[pool[idx].date] = true;
+      }
+    }
+  }
+
+  var wdo = all.filter(function(x) { return ws[x.date]; });
+  var rem = workTarget;
+  var lastSi = -1;
+
+  var days = all.map(function(x) {
+    var base = {d:x.d, date:x.date, wd:x.wd, st:x.st, isSick:x.isSick, isBlitz:x.isBlitz, isHol:x.isHol, isSun:x.isSun, isSat:x.isSat, start:null, end:null, pause:null, hrs:null, efz:null};
+    if (!ws[x.date]) return base;
+
+    var left = wdo.filter(function(w) { return w.d >= x.d; }).length;
+    var dh = clamp(rem / left, Math.max(expectedDailyH * 0.75, 3), 8);
+    dh = Math.round(dh * 2) / 2;
+
+    var pa = (dh >= 7) ? PAUSES[1 + Math.floor(R() * 2)] : (dh >= 6) ? PAUSES[Math.floor(R() * 2)] : 30;
+
+    var cands = [];
+    for (var ci = 0; ci < STARTS.length; ci++) { if (ci !== lastSi) cands.push(ci); }
+    var si = cands[Math.floor(R() * cands.length)];
+    lastSi = si;
+    var sh = STARTS[si];
+    var fh = parseFloat(clamp(r15(sh + dh + pa / 60) - sh - pa / 60, 0, 8).toFixed(2));
+    rem = Math.max(rem - fh, 0);
+
+    base.st = "work";
+    base.start = hm(sh);
+    base.end = hm(r15(sh + fh + pa / 60));
+    base.pause = pa;
+    base.hrs = fh;
+    return base;
+  });
+
+  // ── EFZ §3 EFZG ──────────────────────────────────────────────────
+  var dwSetting = dwSched; // gleiche dw-Einstellung wie Planung oben
+  var workRatio = Math.min(dwSetting / maxDPW, 1.0);
+
+  var wdays = days.filter(function(x) { return x.st === "work"; });
+  var worked = parseFloat(wdays.reduce(function(s, x) { return s + (x.hrs || 0); }, 0).toFixed(2));
+
+  // avgDay: Priorität: 1. Aus Umlage (S.dh), 2. Aus gearbeiteten Tagen, 3. Fallback
+  var avgDay;
+  var dhKey = pk(dr.id, yr, mo);
+  if (S.dh && S.dh[dhKey] && S.dh[dhKey] > 0) {
+    // Direkt aus der Umlage — höchste Priorität
+    avgDay = S.dh[dhKey];
+  } else if (wdays.length > 0) {
+    avgDay = parseFloat((worked / wdays.length).toFixed(2));
+  } else {
+    // Fallback: Monatsziel / (dw * 4.33 Wochen im Monat), max 8h
+    avgDay = parseFloat(Math.min(maxH / Math.max(dwSched * 4.33, 1), 8).toFixed(2));
+  }
+
+  // Krank-Werktage sammeln
+  var sickWD = days.filter(function(x) {
+    return x.isSick && !x.isSun && !(dr.ns && x.isSat);
+  });
+
+  // Anzahl EFZ-Tage = Kranktage × Arbeitsquote
+  var efzSickCount = Math.round(sickWD.length * workRatio);
+
+  // EFZ-Tage gleichmäßig über den Krankheitszeitraum verteilen
+  var sickEfzSet = {};
+  if (efzSickCount >= sickWD.length) {
+    sickWD.forEach(function(x) { sickEfzSet[x.date] = true; });
+  } else if (efzSickCount > 0) {
+    var step = (sickWD.length - 1) / (efzSickCount - 1 || 1);
+    for (var si = 0; si < efzSickCount; si++) {
+      var idx = Math.min(Math.round(si * step), sickWD.length - 1);
+      sickEfzSet[sickWD[idx].date] = true;
+    }
+  }
+
+  days.forEach(function(x) {
+    if (x.isSun) return;
+    if (x.isSick && sickEfzSet[x.date]) x.efz = avgDay;
+    else if (x.isHol && !x.isSick) x.efz = avgDay;
+  });
+
+  var efzTotal = parseFloat(days.reduce(function(s, x) { return s + (x.efz || 0); }, 0).toFixed(2));
+  var grand = parseFloat(Math.min(worked + efzTotal, maxH).toFixed(2));
+
+  var warns = [];
+  if (getWage(dr) < ML) warns.push("Stundenlohn " + getWage(dr).toFixed(2) + "€ unter Mindestlohn!");
+  if (days.some(function(x) { return (x.hrs || 0) > 8.01; })) warns.push("Tagesstunden > 8h – bitte prüfen");
+
+  return {days:days, total:grand, worked:worked, efz:efzTotal, avgDay:avgDay,
+          workRatio:parseFloat(workRatio.toFixed(2)), dw:dwSetting,
+          dhFromDoc: !!(S.dh && S.dh[dhKey]),
+          efzDays:efzSickCount, target:parseFloat(target.toFixed(1)), maxH:maxH, warns:warns};
+}
+
+// Manuelle Tages-Korrekturen nach genSched anwenden
+function clearME(drId, yr, mo) {
+  if (!confirm("Alle manuellen Änderungen für diesen Monat verwerfen und neu generieren?")) return;
+  var k = pk(drId, yr, mo);
+  Object.keys(S.me || {}).forEach(function(key) { if (key.indexOf(k + "_") === 0) delete S.me[key]; });
+  var dr = null;
+  for (var i = 0; i < S.dr.length; i++) { if (S.dr[i].id === drId) { dr = S.dr[i]; break; } }
+  if (dr) S.pl[k] = genSched(dr, yr, mo);
+  defer();
+  renderPA();
+  autoSave();
+}
+
+function applyManualEdits(k) {
+  var p = S.pl[k];
+  if (!p || !S.me) return;
+  var changed = false;
+  p.days.forEach(function(x, idx) {
+    var meKey = k + "_" + idx;
+    var edit = S.me[meKey];
+    if (!edit) return;
+    if (edit.st === "work") {
+      x.st    = "work";
+      x.start = edit.start;
+      x.end   = edit.end;
+      x.pause = edit.pause;
+      x.hrs   = edit.hrs;
+      x.efz   = null;
+      changed = true;
+    } else if (edit.st === "free") {
+      if (!x.isSick && !x.isHol && !x.isSun) {
+        x.st    = "free";
+        x.start = null; x.end = null; x.pause = null; x.hrs = null;
+        changed = true;
+      }
+    }
+  });
+  if (changed) {
+    // Gesamtstunden neu berechnen
+    var wdays = p.days.filter(function(d) { return d.st === "work"; });
+    var worked = parseFloat(wdays.reduce(function(s, d) { return s + (d.hrs||0); }, 0).toFixed(2));
+    var efzTotal = parseFloat(p.days.reduce(function(s, d) { return s + (d.efz||0); }, 0).toFixed(2));
+    p.worked = worked;
+    p.efz = efzTotal;
+    p.total = parseFloat(Math.min(worked + efzTotal, p.maxH).toFixed(2));
+    p.manual = true;
+  }
+}
+
+function regenDr(dr) {
+  Object.keys(S.pl).forEach(function(k) {
+    if (k.indexOf(dr.id + "_") === 0) {
+      var parts = k.split("_");
+      S.pl[k] = genSched(dr, +parts[1], +parts[2]);
+      applyManualEdits(k);
+    }
+  });
+}
+
+// ════════════════════════════════════════
+// DEBOUNCE
+// ════════════════════════════════════════
+var _rt = null;
+function defer() {
+  clearTimeout(_rt);
+  _rt = setTimeout(function() {
+    rDash();
+    rDL();
+    updateWP();
+    if (S.pg === "planung") renderPA();
+  }, 150);
+}
+
+// ════════════════════════════════════════
+// RENDER: DASHBOARD
+// ════════════════════════════════════════
+function rDash() {
+  var act = S.dr.filter(function(x) { return x.on; });
+  var tp = 0, tm = 0, w = 0, pl = 0;
+  act.forEach(function(d) {
+    tm += effH(d);
+    var p = S.pl[pk(d.id, S.yr, S.mo)];
+    if (p) { tp += p.total; w += p.warns.length; pl++; }
+  });
+
+  var cards = [
+    {l:"Aktive Fahrer", v:act.length, s:"Cango Transporte", c:"#3B82F6", i:"⬡"},
+    {l:"Geplant", v:pl+"/"+act.length, s:MN[S.mo-1]+" "+S.yr, c:"#22C55E", i:"▦"},
+    {l:"Iststunden gesamt", v:tp.toFixed(1)+"h", s:"von max. "+tm.toFixed(1)+"h", c:"#F0A500", i:"◉"},
+    {l:"Warnungen", v:w, s:w===0?"Alles OK":"Bitte prüfen", c:w>0?"#EF4444":"#22C55E", i:"⚠"}
+  ];
+
+  G("sgrid").innerHTML = cards.map(function(x) {
+    return '<div class="sc" style="border-top-color:'+x.c+'">' +
+      '<div class="si" style="color:'+x.c+'">'+x.i+'</div>' +
+      '<div class="sv" style="color:'+x.c+'">'+E(x.v)+'</div>' +
+      '<div class="sl">'+x.l+'</div>' +
+      '<div class="ss" style="color:'+x.c+'">'+x.s+'</div>' +
+      '</div>';
+  }).join("");
+
+  G("dgrid").innerHTML = act.map(function(d) {
+    var p = S.pl[pk(d.id, S.yr, S.mo)];
+    var mh = effH(d);
+    var wa = p && p.warns.length > 0;
+    var bc = wa ? "rgba(239,68,68,.5)" : (p ? "rgba(34,197,94,.4)" : "var(--bor)");
+    var inner = p
+      ? '<div style="font-family:var(--mono);font-size:20px;font-weight:700;color:'+(wa?"#EF4444":"#22C55E")+';margin-top:3px">'+p.total+'h</div>' +
+        '<div style="font-size:10px;color:'+(wa?"#EF4444":"#22C55E")+'">'+(wa?"⚠ "+E(p.warns[0]):"✓ "+p.days.filter(function(x){return x.st==="work";}).length+" Tage")+'</div>'
+      : '<div style="font-size:10px;color:var(--dim);margin-top:8px;font-family:var(--mono)">Nicht generiert</div>';
+    return '<div class="dc" style="border-color:'+bc+'">' +
+      '<div style="font-weight:600;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:4px">'+E(d.n)+'</div>' +
+      '<div style="font-family:var(--mono);font-size:9px;color:var(--mut)">max '+mh+'h</div>' +
+      inner + '</div>';
+  }).join("");
+}
+
+// ════════════════════════════════════════
+// RENDER: FAHRER TABLE
+// ════════════════════════════════════════
+function rFtb() {
+  G("ftb").innerHTML = S.dr.map(function(d) {
+    var w = getWage(d), ah = autoH(d), ef = effH(d);
+    var p = S.pl[pk(d.id, S.yr, S.mo)];
+    var wa = p && p.warns.length > 0;
+    var wOk = w >= ML;
+    return '<tr style="opacity:'+(d.on?1:.4)+'">' +
+      '<td style="color:var(--mut)">'+(d.id<10?"0"+d.id:d.id)+'</td>' +
+      '<td style="font-weight:700;font-family:var(--sans);font-size:13px">'+E(d.n)+'</td>' +
+      '<td style="color:var(--acc);font-weight:600">'+d.b.toLocaleString("de-DE")+'&nbsp;€</td>' +
+      '<td><input type="number" step="0.1" value="'+(d.w!=null?d.w:"")+'" placeholder="'+ML+'" ' +
+        'style="width:70px;background:var(--surf);border:1px solid '+(wOk?"var(--bor)":"rgba(239,68,68,.6)")+';color:'+(wOk?"var(--txt)":"#EF4444")+';padding:4px 7px;border-radius:5px;font-family:var(--mono);font-size:11px" ' +
+        'onchange="setWage('+d.id+',this.value)"/>' +
+        '<div style="font-family:var(--mono);font-size:9px;color:'+(wOk?"var(--dim)":"#EF4444")+';margin-top:1px">'+w.toFixed(2)+'€'+(wOk?"":" ⚠ UNTER MINDESTLOHN")+'</div></td>' +
+      '<td><div style="font-family:var(--mono);font-size:13px;font-weight:700;color:'+(d.mh!=null?"#F0A500":"var(--txt)")+'">'+ef+'h</div>' +
+        '<div style="font-family:var(--mono);font-size:9px;color:var(--dim)">Auto: '+ah+'h</div>' +
+        '<input type="number" value="'+(d.mh!=null?d.mh:"")+'" placeholder="leer=auto" ' +
+        'style="width:78px;background:var(--surf);border:1px solid var(--bor);color:var(--txt);padding:3px 6px;border-radius:5px;font-family:var(--mono);font-size:10px;margin-top:2px" ' +
+        'onchange="setManH('+d.id+',this.value)"/></td>' +
+      '<td>'+(d.ns?'<span style="color:#EF4444">● Ja</span>':'<span style="color:var(--dim)">Nein</span>')+'</td>' +
+      '<td>' +
+        '<select style="background:var(--surf);border:1px solid var(--bor);color:var(--txt);padding:3px 6px;border-radius:5px;font-family:var(--mono);font-size:11px" ' +
+        'onchange="setDW('+d.id+',this.value)">' +
+        [2,3,4,5,6].map(function(n){return '<option value="'+n+'"'+((d.dw||5)==n?' selected':'')+'>'+n+' Tage</option>';}).join('') +
+        '</select>' +
+        '<div style="font-family:var(--mono);font-size:9px;color:var(--dim);margin-top:1px">'+(d.ns?'Mo–Fr':'Mo–Sa')+'</div>' +
+      '</td>' +
+      '<td>'+(p?'<span style="color:'+(wa?"#EF4444":"#22C55E")+';font-weight:600;font-family:var(--mono)">'+p.total+'h'+(wa?" ⚠":"")+'</span>':'<span style="color:var(--dim);font-family:var(--mono)">—</span>')+'</td>' +
+      '<td>'+(d.on?'<span style="color:#22C55E">● Aktiv</span>':'<span style="color:var(--mut)">○ Inaktiv</span>')+'</td>' +
+      '<td><button class="bsm" onclick="toggleDr('+d.id+')">'+(d.on?"Deakt.":"Akt.")+'</button></td>' +
+      '</tr>';
+  }).join("");
+}
+
+// ════════════════════════════════════════
+// RENDER: MH GRID
+// ════════════════════════════════════════
+function rMhGrid() {
+  var lbl = G("mh-lbl");
+  if (lbl) lbl.textContent = "— " + MN[S.mo-1] + " " + S.yr;
+  var grid = G("mhgrid");
+  if (!grid) return;
+  var act = S.dr.filter(function(x) { return x.on; });
+  grid.innerHTML = act.map(function(d) {
+    var k = pk(d.id, S.yr, S.mo);
+    var autoh = effH(d);
+    var cur = (S.tg[k] != null) ? S.tg[k] : null;
+    var p = S.pl[k];
+    var ist = p ? p.total : null;
+    var bw = cur ? Math.min(Math.round(cur / autoh * 100), 100) : 0;
+    var bc = cur > autoh ? "#EF4444" : (cur < autoh * 0.7 ? "#F0A500" : "#22C55E");
+    var resetBtn = cur != null
+      ? '<button onclick="clearMH('+d.id+')" style="margin-top:5px;width:100%;background:transparent;border:1px solid var(--bor);color:var(--dim);padding:2px;border-radius:4px;font-size:9px;font-family:var(--mono);cursor:pointer">× Reset ('+autoh+'h)</button>'
+      : "";
+    return '<div class="mhc">' +
+      '<div style="font-weight:600;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:5px">'+E(d.n)+'</div>' +
+      '<div style="font-family:var(--mono);font-size:9px;color:var(--mut);margin-bottom:4px">Auto: '+autoh+'h · '+getWage(d).toFixed(2)+'€/Std.</div>' +
+      '<div style="display:flex;align-items:center;gap:4px;margin-bottom:5px">' +
+        '<button class="adj" onclick="adjMH('+d.id+',-0.5)">−</button>' +
+        '<input class="mhi'+(cur!=null?" set":"")+'" id="mhi_'+d.id+'" type="text" ' +
+          'value="'+(cur!=null?cur:"")+'" placeholder="'+autoh+'" ' +
+          'onkeydown="if(event.key===\'Enter\'){event.preventDefault();commitMH('+d.id+')}" ' +
+          'onchange="commitMH('+d.id+')" ' +
+          'title="Zahl=absolut · +10 addiert · -5 zieht ab"/>' +
+        '<button class="adj" onclick="adjMH('+d.id+',+0.5)">+</button>' +
+        '<span style="font-family:var(--mono);font-size:10px;color:var(--mut)">h</span>' +
+      '</div>' +
+      '<div style="background:var(--surf);border-radius:3px;height:4px;overflow:hidden;margin-bottom:4px">' +
+        '<div style="height:100%;width:'+bw+'%;background:'+bc+';transition:width .3s;border-radius:3px"></div>' +
+      '</div>' +
+      '<div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:9px">' +
+        '<span style="color:'+bc+'">'+(cur!=null?cur+'h gesetzt':'Auto '+autoh+'h')+'</span>' +
+        (ist!=null?'<span style="color:#22C55E">Ist: '+ist+'h</span>':"") +
+      '</div>' +
+      resetBtn +
+      '</div>';
+  }).join("");
+}
+
+// ════════════════════════════════════════
+// RENDER: DRIVER LIST (PLANUNG)
+// ════════════════════════════════════════
+function rDL() {
+  var act = S.dr.filter(function(x) { return x.on; });
+  G("dli-wrap").innerHTML = act.map(function(d) {
+    var p = S.pl[pk(d.id, S.yr, S.mo)];
+    var mh = moH(d, S.yr, S.mo);
+    var sel = S.sel === d.id;
+    var wa = p && p.warns.length > 0;
+    var right = p
+      ? '<span style="font-family:var(--mono);font-size:10px;color:'+(wa?"#EF4444":"#22C55E")+';font-weight:600">'+p.total+'h'+(wa?" ⚠":" ✓")+'</span>'
+      : "";
+    return '<div class="dli'+(sel?" on":"")+'" onclick="selDr('+d.id+')">' +
+      '<div class="dlin">'+E(d.n)+'</div>' +
+      '<div class="dlis">' +
+        '<span style="font-family:var(--mono);font-size:10px;color:var(--mut)">'+mh+'h</span>' +
+        right +
+      '</div>' +
+      '</div>';
+  }).join("");
+}
+
+// ════════════════════════════════════════
+// RENDER: PLANUNG AREA
+// ════════════════════════════════════════
+function renderPA() {
+  var area = G("pa");
+  var dr = null;
+  for (var i = 0; i < S.dr.length; i++) {
+    if (S.dr[i].id === S.sel) { dr = S.dr[i]; break; }
+  }
+  if (!dr) {
+    area.innerHTML = '<div class="es"><div style="font-size:30px;color:var(--dim);margin-bottom:10px">⬡</div><div style="color:var(--mut);font-size:14px;font-weight:600">Fahrer auswählen</div></div>';
+    return;
+  }
+
+  var k = pk(dr.id, S.yr, S.mo);
+  var p = S.pl[k];
+  var th = S.tg[k] != null ? S.tg[k] : "";
+  var mh = effH(dr);
+  var sl = S.sk[k] || [];
+  var bl = S.bz[k] || [];
+
+  var warnHTML = "";
+  if (p && p.warns.length > 0) {
+    warnHTML = '<div class="wb">' + p.warns.map(function(w) {
+      return '<div style="font-family:var(--mono);font-size:11px;color:var(--red)">⚠ ' + E(w) + '</div>';
+    }).join("") + '</div>';
+  }
+
+  var schedHTML = p ? rSched(p, dr, S.yr, S.mo) :
+    '<div class="es">' +
+    '<div style="font-size:28px;color:var(--dim);margin-bottom:10px">▦</div>' +
+    '<div style="color:var(--mut);font-size:13px;font-weight:600">Noch kein Stundenzettel für ' + E(dr.n) + '</div>' +
+    '<button class="ba" style="margin-top:14px;padding:8px 20px" onclick="gp(' + dr.id + ')">Jetzt generieren</button>' +
+    '</div>';
+
+  var sickTags = sl.map(function(s) {
+    return '<span class="tag-r" onclick="rmSk(\'' + k + '\',\'' + s + '\')">🔴 ' + s + ' ✕</span>';
+  }).join("");
+
+  var blitzTags = bl.map(function(b) {
+    return '<span class="tag-a" onclick="rmBz(\'' + k + '\',\'' + b + '\')">⚡ ' + b + ' ✕</span>';
+  }).join("");
+
+  var k2 = pk(dr.id, S.yr, S.mo);
+  var hasMe = Object.keys(S.me || {}).some(function(key) { return key.indexOf(k2 + "_") === 0; });
+  var exportBtns = p
+    ? '<button class="bb" onclick="doCSV(' + dr.id + ')">↓ CSV</button>' +
+      '<button class="bb" onclick="doPrint(' + dr.id + ')">🖨 Drucken</button>' +
+      (hasMe ? '<button onclick="clearME(' + dr.id + ',' + S.yr + ',' + S.mo + ')" style="background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.4);color:#EF4444;padding:6px 10px;border-radius:6px;font-family:var(--mono);font-size:10px;cursor:pointer" title="Manuelle Änderungen verwerfen">✎ Reset</button>' : '')
+    : "";
+
+  area.innerHTML =
+    '<div class="cb">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">' +
+        '<div>' +
+          '<span style="font-weight:800;font-size:15px">' + E(dr.n) + '</span>' +
+          '<span style="font-family:var(--mono);font-size:10px;color:var(--mut);margin-left:10px">' + dr.b + '€ · ' + getWage(dr).toFixed(2) + '€/Std. · max ' + mh + 'h · ' + (dr.ns ? "Mo–Fr" : "Mo–Sa") + '</span>' +
+        '</div>' +
+        '<div style="display:flex;gap:6px">' + exportBtns + '<button class="ba" style="padding:6px 14px;font-size:11px" onclick="gp(' + dr.id + ')">Generieren</button></div>' +
+      '</div>' +
+      '<div style="background:var(--surf);border:1px solid ' + (th ? "rgba(240,165,0,.4)" : "var(--bor)") + ';border-radius:8px;padding:11px 13px;margin-bottom:12px">' +
+        '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
+          '<div>' +
+            '<div class="fl" style="margin-bottom:4px">STUNDEN ' + MN[S.mo-1].toUpperCase() + ' ' + S.yr + '</div>' +
+            '<div style="display:flex;align-items:center;gap:7px">' +
+              '<input type="text" value="' + th + '" placeholder="' + mh + '" ' +
+                'style="width:90px;background:var(--bg);border:1px solid ' + (th ? "rgba(240,165,0,.5)" : "var(--bor)") + ';color:' + (th ? "#F0A500" : "var(--txt)") + ';padding:6px 9px;border-radius:6px;font-family:var(--mono);font-size:14px;font-weight:700" ' +
+                'onchange="setMoH(' + dr.id + ',' + S.yr + ',' + S.mo + ',this.value)" ' +
+                'title="Zahl, +10, oder -5"/>' +
+              '<span style="font-family:var(--mono);font-size:12px;color:' + (th ? "#F0A500" : "var(--mut)") + '">Std.</span>' +
+              (th ? '<span style="font-family:var(--mono);font-size:10px;color:#22C55E">✓ ' + th + 'h manuell</span>' : '<span style="font-family:var(--mono);font-size:10px;color:var(--dim)">Auto (' + mh + 'h)</span>') +
+            '</div>' +
+          '</div>' +
+          '<div style="margin-left:auto;text-align:right">' +
+            '<div style="font-family:var(--mono);font-size:9px;color:var(--mut)">WIRKSAM</div>' +
+            '<div style="font-family:var(--mono);font-size:20px;font-weight:700;color:#F0A500">' + (th || mh) + 'h</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
+        '<div>' +
+          '<div class="fl">KRANKTAG (YYYY-MM-DD)</div>' +
+          '<div style="display:flex;gap:5px">' +
+            '<input class="fi" id="isk_' + k + '" placeholder="2026-04-07" onkeydown="if(event.key===\'Enter\')addSk(\'' + k + '\')"/>' +
+            '<button class="br" onclick="addSk(\'' + k + '\')">+</button>' +
+          '</div>' +
+          '<div style="margin-top:5px">' + sickTags + '</div>' +
+        '</div>' +
+        '<div>' +
+          '<div class="fl">BLITZERTAG (YYYY-MM-DD)</div>' +
+          '<div style="display:flex;gap:5px">' +
+            '<input class="fi" id="ibz_' + k + '" placeholder="2026-04-15" onkeydown="if(event.key===\'Enter\')addBz(\'' + k + '\')"/>' +
+            '<button class="bam" onclick="addBz(\'' + k + '\')">+</button>' +
+          '</div>' +
+          '<div style="margin-top:5px">' + blitzTags + '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+    warnHTML +
+    schedHTML;
+}
+
+// ════════════════════════════════════════
+// RENDER: SCHEDULE TABLE
+// ════════════════════════════════════════
+function calcHrs(start, end, pause) {
+  if (!start || !end) return 0;
+  var s = start.split(":"), e = end.split(":");
+  var sh = +s[0] + +s[1]/60, eh = +e[0] + +e[1]/60;
+  var h = eh - sh - pause/60;
+  return Math.round(Math.max(h, 0) * 4) / 4;
+}
+
+function editDay(drId, yr, mo, dayIdx) {
+  var k = pk(drId, yr, mo);
+  var p = S.pl[k];
+  if (!p) return;
+  var x = p.days[dayIdx];
+  if (!x || x.isSun) return;
+  var canWork = !x.isSick && !x.isHol && x.st !== "sun";
+
+  var overlay = document.createElement("div");
+  overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px";
+
+  var cur = x.st === "work";
+  overlay.innerHTML =
+    '<div style="background:#1A2030;border:1px solid #252E3F;border-radius:14px;padding:20px;width:340px;max-width:100%">' +
+      '<div style="font-weight:800;font-size:14px;margin-bottom:4px">' + x.date + ' — ' + WD[x.wd] + '</div>' +
+      '<div style="font-family:var(--mono);font-size:10px;color:#6B7A94;margin-bottom:14px">' +
+        (x.isSick ? '🔴 Kranktag' : x.isHol ? '🔵 Feiertag' : '○ Normaler Tag') +
+      '</div>' +
+
+      // Status buttons
+      '<div style="display:flex;gap:6px;margin-bottom:14px">' +
+        (canWork ? '<button id="eb-work" onclick="edSetSt(&apos;work&apos;)" style="flex:1;padding:8px;border-radius:7px;font-family:var(--sans);font-weight:700;font-size:11px;cursor:pointer;border:2px solid ' + (cur?"#22C55E":"#252E3F") + ';background:' + (cur?"rgba(34,197,94,.15)":"transparent") + ';color:' + (cur?"#22C55E":"#6B7A94") + '">● Arbeit</button>' : '') +
+        '<button id="eb-free" onclick="edSetSt(&apos;free&apos;)" style="flex:1;padding:8px;border-radius:7px;font-family:var(--sans);font-weight:700;font-size:11px;cursor:pointer;border:2px solid ' + (!cur&&x.st!=="sick"&&!x.isHol?"#F0A500":"#252E3F") + ';background:' + (!cur&&x.st!=="sick"&&!x.isHol?"rgba(240,165,0,.1)":"transparent") + ';color:' + (!cur&&x.st!=="sick"&&!x.isHol?"#F0A500":"#6B7A94") + '">○ Frei</button>' +
+      '</div>' +
+
+      // Time inputs (shown when work)
+      '<div id="ed-work-fields" style="display:' + (cur?"grid":"none") + ';grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">' +
+        '<div><div style="font-family:var(--mono);font-size:9px;color:#6B7A94;margin-bottom:3px">BEGINN</div>' +
+          '<input id="ed-start" type="time" value="' + (x.start||"08:00") + '" ' +
+          'style="width:100%;background:#0B0E14;border:1px solid #252E3F;color:#D4DCE8;padding:6px;border-radius:6px;font-family:var(--mono);font-size:12px"/></div>' +
+        '<div><div style="font-family:var(--mono);font-size:9px;color:#6B7A94;margin-bottom:3px">ENDE</div>' +
+          '<input id="ed-end" type="time" value="' + (x.end||"15:00") + '" ' +
+          'style="width:100%;background:#0B0E14;border:1px solid #252E3F;color:#D4DCE8;padding:6px;border-radius:6px;font-family:var(--mono);font-size:12px"/></div>' +
+        '<div><div style="font-family:var(--mono);font-size:9px;color:#6B7A94;margin-bottom:3px">PAUSE (MIN)</div>' +
+          '<select id="ed-pause" style="width:100%;background:#0B0E14;border:1px solid #252E3F;color:#D4DCE8;padding:6px;border-radius:6px;font-family:var(--mono);font-size:12px">' +
+          [0,30,45,60].map(function(n){return '<option value="'+n+'"'+(n===(x.pause||30)?" selected":"")+'>'+n+' Min</option>';}).join("") +
+          '</select></div>' +
+      '</div>' +
+      '<div id="ed-hrs-preview" style="font-family:var(--mono);font-size:11px;color:#F0A500;margin-bottom:14px;' + (cur?"":"display:none") + '">' +
+        (cur ? calcHrs(x.start, x.end, x.pause||30) + ' Std. Netto' : "") +
+      '</div>' +
+
+      '<div style="display:flex;gap:8px">' +
+        '<button onclick="edSave(' + drId + ',' + yr + ',' + mo + ',' + dayIdx + ')" ' +
+          'style="flex:1;background:#F0A500;color:#000;border:none;padding:10px;border-radius:8px;font-weight:800;font-size:13px;cursor:pointer">✓ Speichern</button>' +
+        '<button onclick="edClose()" ' +
+          'style="flex:1;background:transparent;border:1px solid #252E3F;color:#6B7A94;padding:10px;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer">Abbrechen</button>' +
+      '</div>' +
+    '</div>';
+
+  document.body.appendChild(overlay);
+  overlay.id = "ed-overlay";
+  overlay.addEventListener("click", function(e) { if (e.target === overlay) edClose(); });
+
+  // Live preview of hours
+  function updatePreview() {
+    var s = G("ed-start"), en = G("ed-end"), pa = G("ed-pause"), pr = G("ed-hrs-preview");
+    if (s && en && pa && pr) {
+      var h = calcHrs(s.value, en.value, +pa.value);
+      pr.textContent = h + " Std. Netto";
+    }
+  }
+  setTimeout(function() {
+    var si = G("ed-start"), ei = G("ed-end"), pi = G("ed-pause");
+    if (si) si.addEventListener("change", updatePreview);
+    if (ei) ei.addEventListener("change", updatePreview);
+    if (pi) pi.addEventListener("change", updatePreview);
+  }, 50);
+}
+
+var _edSt = null;
+function edSetSt(st) {
+  _edSt = st;
+  var wf = G("ed-work-fields");
+  var pr = G("ed-hrs-preview");
+  var bw = G("eb-work"), bf = G("eb-free");
+  if (wf) wf.style.display = (st === "work") ? "grid" : "none";
+  if (pr) pr.style.display = (st === "work") ? "block" : "none";
+  if (bw) {
+    bw.style.borderColor = (st==="work") ? "#22C55E" : "#252E3F";
+    bw.style.background = (st==="work") ? "rgba(34,197,94,.15)" : "transparent";
+    bw.style.color = (st==="work") ? "#22C55E" : "#6B7A94";
+  }
+  if (bf) {
+    bf.style.borderColor = (st==="free") ? "#F0A500" : "#252E3F";
+    bf.style.background = (st==="free") ? "rgba(240,165,0,.1)" : "transparent";
+    bf.style.color = (st==="free") ? "#F0A500" : "#6B7A94";
+  }
+}
+
+function edClose() {
+  var o = G("ed-overlay");
+  if (o) o.parentNode.removeChild(o);
+  _edSt = null;
+}
+
+function edSave(drId, yr, mo, dayIdx) {
+  var k = pk(drId, yr, mo);
+  var p = S.pl[k];
+  if (!p) return;
+  var x = p.days[dayIdx];
+  var st = _edSt || (x.st === "work" ? "work" : "free");
+
+  if (st === "work") {
+    var start = G("ed-start") ? G("ed-start").value : (x.start || "08:00");
+    var end   = G("ed-end")   ? G("ed-end").value   : (x.end   || "15:00");
+    var pause = G("ed-pause") ? +G("ed-pause").value : (x.pause || 30);
+    var hrs   = calcHrs(start, end, pause);
+    x.st    = "work";
+    x.start = start;
+    x.end   = end;
+    x.pause = pause;
+    x.hrs   = hrs;
+    x.efz   = null;
+  } else {
+    x.st    = x.isSick ? "sick" : (x.isHol ? "hol" : "free");
+    x.start = null; x.end = null; x.pause = null; x.hrs = null;
+  }
+
+  // Recalculate plan totals
+  var wdays = p.days.filter(function(d) { return d.st === "work"; });
+  var worked = parseFloat(wdays.reduce(function(s, d) { return s + (d.hrs||0); }, 0).toFixed(2));
+  var efzTotal = parseFloat(p.days.reduce(function(s, d) { return s + (d.efz||0); }, 0).toFixed(2));
+  p.worked = worked;
+  p.efz = efzTotal;
+  p.total = parseFloat(Math.min(worked + efzTotal, p.maxH).toFixed(2));
+  p.manual = true; // flag that this plan has manual edits
+
+  // Persistente manuelle Änderung speichern — überlebt Neu-Generierung
+  var meKey = k + "_" + dayIdx;
+  if (st === "work") {
+    S.me[meKey] = {st:"work", start:x.start, end:x.end, pause:x.pause, hrs:x.hrs};
+  } else {
+    S.me[meKey] = {st:"free"};
+  }
+
+  edClose();
+  renderPA();
+  autoSave();
+}
+
+function rSched(plan, dr, yr, mo) {
+  var rows = plan.days.map(function(x, dayIdx) {
+    var iw = x.st === "work";
+    var hEFZ = x.efz != null && x.efz > 0;
+    var cls = "ro";
+    if (x.isSick) cls = "rk";
+    else if (x.isHol) cls = "rh";
+    else if (iw) cls = "rw";
+
+    var ann;
+    if (iw) ann = '<span style="color:#22C55E">● Arbeit' + (x.isBlitz ? " ⚡" : "") + (plan.manual ? ' <span style="color:#F0A500;font-size:9px">✎</span>' : "") + '</span>';
+    else if (x.isSick && x.isHol) ann = '<span style="color:#F87171">● Krank+' + E(FT[x.date] || "FT") + '</span><span style="color:#A78BFA;font-size:9px;margin-left:5px">EFZ §2+3</span>';
+    else if (x.isSick) ann = '<span style="color:#F87171">● Krank</span><span style="color:#A78BFA;font-size:9px;margin-left:5px">EFZ §3</span>';
+    else if (x.isHol) ann = '<span style="color:#93C5FD">● ' + E(FT[x.date] || "Feiertag") + '</span><span style="color:#A78BFA;font-size:9px;margin-left:5px">EFZ §2</span>';
+    else if (x.isSun) ann = '<span style="color:var(--dim)">○ Sonntag</span>';
+    else if (x.st === "nosat") ann = '<span style="color:var(--mut)">○ Kein Samstag</span>';
+    else ann = '<span style="color:var(--dim)">○ Frei</span>';
+
+    var hc = iw
+      ? '<span style="color:#F0A500;font-weight:700">' + x.hrs + ' Std.</span>'
+      : (hEFZ ? '<span style="color:#A78BFA;font-weight:600">' + x.efz + ' Std.</span>' : '<span style="color:var(--dim)">—</span>');
+
+    var editBtn = x.isSun ? "" :
+      '<button onclick="editDay(' + dr.id + ',' + yr + ',' + mo + ',' + dayIdx + ')" ' +
+      'style="background:transparent;border:1px solid #252E3F;color:#6B7A94;padding:2px 7px;border-radius:4px;font-size:10px;cursor:pointer;margin-left:4px">✎</button>';
+
+    return '<tr class="' + cls + '">' +
+      '<td style="font-weight:' + ((iw || hEFZ) ? "600" : "400") + '">' + x.date + '</td>' +
+      '<td>' + WD[x.wd] + '</td>' +
+      '<td style="color:' + (iw ? "#22C55E" : "var(--dim)") + ';font-weight:' + (iw ? "600" : "400") + '">' + (iw ? x.start : "—") + '</td>' +
+      '<td style="color:' + (iw ? "#22C55E" : "var(--dim)") + ';font-weight:' + (iw ? "600" : "400") + '">' + (iw ? x.end : "—") + '</td>' +
+      '<td style="color:' + (iw ? "var(--txt)" : "var(--dim)") + '">' + (iw ? x.pause + " Min" : "—") + '</td>' +
+      '<td>' + hc + '</td>' +
+      '<td style="font-size:10px">' + ann + editBtn + '</td>' +
+      '</tr>';
+  }).join("");
+
+  var wd = plan.days.filter(function(x) { return x.st === "work"; }).length;
+  var sd = plan.days.filter(function(x) { return x.isSick && !x.isSun; }).length;
+  var hd = plan.days.filter(function(x) { return x.isHol && !x.isSun; }).length;
+  var wc = plan.warns.length ? "#EF4444" : "#F0A500";
+
+  return '<div style="background:var(--card);border:1px solid var(--bor);border-radius:11px;overflow:hidden;flex-shrink:0">' +
+    '<div style="background:var(--surf);padding:10px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--bor)">' +
+      '<span style="font-weight:800;font-size:13px">Stundenzettel · ' + MN[S.mo-1] + ' ' + S.yr + '</span>' +
+      '<span style="font-family:var(--mono);font-size:11px;color:var(--mut)">' + wd + ' Tage' +
+        (sd > 0 ? ' · <span style="color:#F87171">' + sd + ' krank</span>' : '') +
+        (hd > 0 ? ' · <span style="color:#93C5FD">' + hd + ' FT</span>' : '') +
+        ' · <span style="color:' + wc + ';font-weight:700">' + plan.total + 'h</span>' +
+        (plan.efz > 0 ? ' · <span style="color:#A78BFA">+' + plan.efz + 'h EFZ</span>' : '') +
+        ' · max ' + plan.maxH + 'h</span>' +
+    '</div>' +
+    '<div style="background:var(--card);padding:7px 14px;border-bottom:1px solid var(--bor);display:flex;gap:16px;font-family:var(--mono);font-size:10px;flex-wrap:wrap">' +
+      '<span>Gearbeitet: <strong style="color:#22C55E">' + plan.worked + 'h</strong></span>' +
+      '<span>EFZ: <strong style="color:#A78BFA">' + plan.efz + 'h</strong>' +
+        (plan.efzDays > 0 ? ' <span style="color:var(--dim)">(' + plan.efzDays + ' Tage · ' + plan.avgDay + 'h/Tag' + (plan.dhFromDoc?' <span style="color:#A78BFA">📄</span>':'') + ')</span>' : '') +
+      '</span>' +
+      '<span>Gesamt: <strong style="color:#F0A500">' + plan.total + 'h</strong></span>' +
+      '<span>Ø Tag: <strong style="color:var(--txt)">' + plan.avgDay + 'h</strong></span>' +
+    '</div>' +
+    '<table>' +
+      '<thead><tr><th>DATUM</th><th>WOCHENTAG</th><th>BEGINN</th><th>ENDE</th><th>PAUSE</th><th>STUNDEN</th><th>ANMERKUNG</th></tr></thead>' +
+      '<tbody>' + rows + '</tbody>' +
+      '<tfoot><tr>' +
+        '<td colspan="4">GESAMTSTUNDEN ' + MN[S.mo-1].toUpperCase() + ' ' + S.yr + ' — ' + E(dr.n.toUpperCase()) + '</td>' +
+        '<td colspan="3" class="tot">' + plan.total + ' Std.</td>' +
+      '</tr></tfoot>' +
+    '</table>' +
+    '</div>';
+}
+
+// ════════════════════════════════════════
+// RENDER: DOKUMENTE LOG
+// ════════════════════════════════════════
+function rDok() {
+  populateSels();
+  var rows = [];
+
+  S.u1.forEach(function(x) {
+    rows.push('<tr>' +
+      '<td><span style="color:#EF4444">♥ Krank</span></td>' +
+      '<td>'+E(x.name)+'</td>' +
+      '<td style="font-family:var(--mono)">'+x.von+' → '+x.bis+'</td>' +
+      '<td style="font-family:var(--mono);font-size:10px;color:var(--mut)">'+x.sd+'d'+(x.etg?' (+1 gearbeitet)':'')+(x.dailyHours?' · <span style="color:#A78BFA">'+x.dailyHours+'h/Tag</span>':'')+'</td>' +
+      '<td style="font-family:var(--mono);font-size:10px;color:var(--dim)">'+(x.src||"Manuell")+'</td>' +
+      '<td><button class="bsm" style="color:#EF4444" onclick="rmU1(\''+x.id+'\')">✕</button></td>' +
+      '</tr>');
+  });
+
+  S.bzLog.forEach(function(x) {
+    rows.push('<tr>' +
+      '<td><span style="color:#F0A500">⚡ Blitzer</span></td>' +
+      '<td>'+E(x.name)+'</td>' +
+      '<td style="font-family:var(--mono)">'+x.date+'</td>' +
+      '<td></td>' +
+      '<td style="font-family:var(--mono);font-size:10px;color:var(--dim)">Manuell</td>' +
+      '<td><button class="bsm" style="color:#EF4444" onclick="rmBzLog(\''+x.id+'\')">✕</button></td>' +
+      '</tr>');
+  });
+
+  S.lohnLog.forEach(function(x) {
+    rows.push('<tr>' +
+      '<td><span style="color:#3B82F6">◉ Lohn</span></td>' +
+      '<td>'+E(x.name)+'</td>' +
+      '<td style="font-family:var(--mono)">'+x.mo+'</td>' +
+      '<td style="font-family:var(--mono);font-size:10px;color:var(--mut)">'+x.h+'h · '+x.w+'€/Std.</td>' +
+      '<td style="font-family:var(--mono);font-size:10px;color:#A78BFA">KI</td>' +
+      '<td><button class="bsm" style="color:#EF4444" onclick="rmLohn(\''+x.id+'\')">✕</button></td>' +
+      '</tr>');
+  });
+
+  G("dok-log").innerHTML = rows.length > 0
+    ? '<div class="tw">' +
+        '<div style="padding:10px 14px;border-bottom:1px solid var(--bor);background:var(--surf);display:flex;justify-content:space-between;align-items:center">' +
+          '<span style="font-weight:700;font-size:13px">Übernommene Einträge ('+rows.length+')</span>' +
+          '<span style="font-family:var(--mono);font-size:10px;color:var(--mut)">✕ = rückgängig</span>' +
+        '</div>' +
+        '<table><thead><tr><th>TYP</th><th>FAHRER</th><th>ZEITRAUM</th><th>DETAILS</th><th>QUELLE</th><th></th></tr></thead>' +
+        '<tbody>'+rows.join("")+'</tbody></table>' +
+      '</div>'
+    : '<div style="font-family:var(--mono);font-size:11px;color:var(--dim);padding:14px 0;text-align:center">Noch keine Einträge</div>';
+}
+
+function populateSels() {
+  var act = S.dr.filter(function(x) { return x.on; });
+  ["u1-dr","bz-dr"].forEach(function(id) {
+    var s = G(id);
+    if (!s) return;
+    var cur = s.value;
+    s.innerHTML = '<option value="">– wählen –</option>' +
+      act.map(function(d) {
+        return '<option value="'+d.id+'"'+(d.id==cur?" selected":"")+'>'+E(d.n)+'</option>';
+      }).join("");
+  });
+}
+
+function updateWP() {
+  var w = 0;
+  S.dr.filter(function(x) { return x.on; }).forEach(function(d) {
+    var p = S.pl[pk(d.id, S.yr, S.mo)];
+    if (p) w += p.warns.length;
+  });
+  var wp = G("wp");
+  wp.style.display = w > 0 ? "inline" : "none";
+  wp.textContent = "⚠ " + w + " Warnung" + (w > 1 ? "en" : "");
+}
+
+function render() {
+  rDash();
+  rFtb();
+  rMhGrid();
+  rDL();
+  updateWP();
+  if (S.pg === "planung") renderPA();
+  if (S.pg === "dokumente") rDok();
+}
+
+// ════════════════════════════════════════
+// NAVIGATION
+// ════════════════════════════════════════
+function goPage(p) {
+  S.pg = p;
+  document.querySelectorAll(".page").forEach(function(x) { x.classList.remove("on"); });
+  G("p-" + p).classList.add("on");
+  document.querySelectorAll(".nb").forEach(function(x) { x.classList.toggle("on", x.dataset.pg === p); });
+  G("pg-ico").textContent = PICONS[p];
+  G("pg-lbl").textContent = PLBLS[p];
+  if (p === "planung") renderPA();
+  if (p === "fahrer") { rFtb(); rMhGrid(); }
+  if (p === "dokumente") rDok();
+}
+
+// ════════════════════════════════════════
+// ACTIONS
+// ════════════════════════════════════════
+function gp(id) {
+  var dr = null;
+  for (var i = 0; i < S.dr.length; i++) { if (S.dr[i].id === id) { dr = S.dr[i]; break; } }
+  if (!dr) return;
+  var k = pk(id, S.yr, S.mo);
+  // Warnen wenn manuelle Änderungen vorhanden
+  var hasEdits = Object.keys(S.me || {}).some(function(key) { return key.indexOf(k + "_") === 0; });
+  if (hasEdits) {
+    if (!confirm("Dieser Monat hat manuelle Änderungen.\n\nNeu generieren und Änderungen BEHALTEN oder VERWERFEN?\n\nOK = Behalten · Abbrechen = Verwerfen")) {
+      // Verwerfen: Edits für diesen Monat löschen
+      Object.keys(S.me || {}).forEach(function(key) { if (key.indexOf(k + "_") === 0) delete S.me[key]; });
+    }
+  }
+  S.pl[k] = genSched(dr, S.yr, S.mo);
+  applyManualEdits(k);
+  defer();
+  if (S.pg === "planung") renderPA();
+}
+
+function genAll() {
+  S.dr.filter(function(x) { return x.on; }).forEach(function(d) {
+    var k = pk(d.id, S.yr, S.mo);
+    S.pl[k] = genSched(d, S.yr, S.mo);
+    applyManualEdits(k);
+  });
+  render();
+}
+
+function selDr(id) { S.sel = id; rDL(); renderPA(); }
+
+function toggleDr(id) {
+  for (var i = 0; i < S.dr.length; i++) {
+    if (S.dr[i].id === id) { S.dr[i].on = !S.dr[i].on; break; }
+  }
+  render();
+}
+
+function setWage(id, val) {
+  for (var i = 0; i < S.dr.length; i++) {
+    if (S.dr[i].id === id) { S.dr[i].w = (val && +val > 0) ? +val : null; regenDr(S.dr[i]); break; }
+  }
+  defer();
+}
+
+function setDW(id, val) {
+  for (var i = 0; i < S.dr.length; i++) {
+    if (S.dr[i].id === id) { S.dr[i].dw = +val; regenDr(S.dr[i]); break; }
+  }
+  defer();
+}
+
+function setManH(id, val) {
+  for (var i = 0; i < S.dr.length; i++) {
+    if (S.dr[i].id === id) { S.dr[i].mh = (val && +val > 0) ? +val : null; regenDr(S.dr[i]); break; }
+  }
+  defer();
+}
+
+function setMoH(id, yr, mo, raw) {
+  var k = pk(id, yr, mo);
+  var dr = null;
+  for (var i = 0; i < S.dr.length; i++) { if (S.dr[i].id === id) { dr = S.dr[i]; break; } }
+  if (!dr) return;
+  if (!raw || !raw.trim()) {
+    S.tg[k] = null;
+  } else {
+    var autoh = effH(dr);
+    var v;
+    var t = raw.trim();
+    if (t.charAt(0) === "+") v = autoh + (+t.slice(1));
+    else if (t.charAt(0) === "-") v = autoh - (+t.slice(1));
+    else v = +t;
+    S.tg[k] = Math.max(1, Math.round(v * 2) / 2);
+  }
+  S.pl[k] = genSched(dr, yr, mo);
+  defer();
+}
+
+// MH Grid
+var _commitGuard = false;
+function commitMH(id) {
+  if (_commitGuard) return;
+  _commitGuard = true;
+  var inp = G("mhi_" + id);
+  if (inp) {
+    setMoH(id, S.yr, S.mo, inp.value);
+  }
+  setTimeout(function() {
+    _commitGuard = false;
+    rMhGrid();
+  }, 50);
+}
+
+function adjMH(id, delta) {
+  var dr = null;
+  for (var i = 0; i < S.dr.length; i++) { if (S.dr[i].id === id) { dr = S.dr[i]; break; } }
+  if (!dr) return;
+  var k = pk(id, S.yr, S.mo);
+  var cur = S.tg[k] != null ? S.tg[k] : effH(dr);
+  var nv = Math.max(1, Math.round((cur + delta) * 2) / 2);
+  S.tg[k] = nv;
+  S.pl[k] = genSched(dr, S.yr, S.mo);
+  clearTimeout(_rt);
+  _rt = setTimeout(function() { rDash(); rDL(); rMhGrid(); updateWP(); }, 100);
+}
+
+function clearMH(id) {
+  var k = pk(id, S.yr, S.mo);
+  S.tg[k] = null;
+  var dr = null;
+  for (var i = 0; i < S.dr.length; i++) { if (S.dr[i].id === id) { dr = S.dr[i]; break; } }
+  if (dr) S.pl[k] = genSched(dr, S.yr, S.mo);
+  rMhGrid();
+  defer();
+}
+
+// Sick/Blitz in Planung
+function addSk(k) {
+  var inp = G("isk_" + k);
+  var v = inp ? inp.value.trim() : "";
+  if (!v) return;
+  if (!S.sk[k]) S.sk[k] = [];
+  if (S.sk[k].indexOf(v) < 0) S.sk[k].push(v);
+  renderPA();
+}
+function rmSk(k, d) {
+  if (S.sk[k]) S.sk[k] = S.sk[k].filter(function(x) { return x !== d; });
+  renderPA();
+}
+function addBz(k) {
+  var inp = G("ibz_" + k);
+  var v = inp ? inp.value.trim() : "";
+  if (!v) return;
+  if (!S.bz[k]) S.bz[k] = [];
+  if (S.bz[k].indexOf(v) < 0) S.bz[k].push(v);
+  renderPA();
+}
+function rmBz(k, d) {
+  if (S.bz[k]) S.bz[k] = S.bz[k].filter(function(x) { return x !== d; });
+  renderPA();
+}
+
+// ════════════════════════════════════════
+// EXPORT
+// ════════════════════════════════════════
+function doCSV(id) {
+  var dr = null;
+  for (var i = 0; i < S.dr.length; i++) { if (S.dr[i].id === id) { dr = S.dr[i]; break; } }
+  var p = S.pl[pk(id, S.yr, S.mo)];
+  if (!p || !dr) return;
+  var rows = ["\uFEFFDatum,Wochentag,Beginn,Ende,Pause (Min),Stunden,Anmerkung"];
+  p.days.forEach(function(x) {
+    if (x.st === "work") rows.push(x.date+","+WD[x.wd]+","+x.start+","+x.end+","+x.pause+","+x.hrs+",Arbeit"+(x.isBlitz?" (Blitzer)":""));
+    else if (x.efz) rows.push(x.date+","+WD[x.wd]+",,,,"+x.efz+","+(x.isSick?"Krank EFZ":"Feiertag EFZ"));
+    else if (x.isHol) rows.push(x.date+","+WD[x.wd]+",,,,0,Feiertag");
+  });
+  rows.push("\nGesamtstunden,,,,,"+p.total+",");
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([rows.join("\n")], {type:"text/csv;charset=utf-8"}));
+  a.download = "Stundenzettel_"+dr.n.replace(/\s+/g,"_")+"_"+MN[S.mo-1]+"_"+S.yr+".csv";
+  a.click();
+}
+
+function doPrint(id) {
+  var dr = null;
+  for (var i = 0; i < S.dr.length; i++) { if (S.dr[i].id === id) { dr = S.dr[i]; break; } }
+  var p = S.pl[pk(id, S.yr, S.mo)];
+  if (!p || !dr) return;
+  var wd = p.days.filter(function(x) { return x.st === "work"; }).length;
+  var sd = p.days.filter(function(x) { return x.isSick && !x.isSun; }).length;
+  var rows = p.days.map(function(x) {
+    var bg = x.isSick ? "#fff0f0" : (x.isHol ? "#eef2ff" : (x.st === "work" ? "#fff" : "#f8f8f8"));
+    var tc = x.isSick ? "#cc0000" : (x.isHol ? "#1d4ed8" : "#222");
+    var hd = x.st === "work" ? x.hrs+" Std." : (x.efz ? x.efz+" Std. (EFZ)" : "");
+    var note = x.isSick ? "🔴 Krank EFZ §3" : (x.isHol ? "🔵 "+(FT[x.date]||"Feiertag")+" EFZ §2" : (x.st==="work" ? "✅ Arbeit"+(x.isBlitz?" ⚡":"") : "—"));
+    return '<tr style="background:'+bg+';color:'+tc+'"><td>'+x.date+'</td><td>'+WD[x.wd]+'</td><td style="text-align:center">'+(x.start||"")+'</td><td style="text-align:center">'+(x.end||"")+'</td><td style="text-align:center">'+(x.pause?x.pause+" Min":"")+'</td><td style="text-align:right;font-weight:700">'+hd+'</td><td style="font-size:11px">'+note+'</td></tr>';
+  }).join("");
+  var w = window.open("","_blank");
+  w.document.write('<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8"/><title>Stundenzettel</title>' +
+    '<style>body{font-family:Arial,sans-serif;font-size:12px;margin:20px}' +
+    'h1{color:#1F3864;font-size:17px;margin-bottom:3px}.meta{font-size:11px;color:#555;margin-bottom:10px}' +
+    'table{width:100%;border-collapse:collapse}th{background:#1F3864;color:#fff;padding:6px 8px;border:1px solid #ccc;text-align:left;font-size:11px}' +
+    'td{padding:5px 8px;border:1px solid #ddd}' +
+    '.tot{background:#1F3864;color:#fff;padding:12px 14px;margin-top:12px;display:flex;justify-content:space-between;border-radius:5px}' +
+    '.sig{display:flex;gap:50px;margin-top:36px}.sig div{flex:1;border-top:1px solid #333;padding-top:5px;font-size:11px;color:#555}' +
+    '@media print{body{margin:10px}}</style></head><body>' +
+    '<h1>Cango Transporte – Arbeitszeitnachweis</h1>' +
+    '<div class="meta"><strong>Mitarbeiter:</strong> '+dr.n+' &nbsp; <strong>Monat:</strong> '+MN[S.mo-1]+' '+S.yr+' &nbsp; <strong>Arbeitstage:</strong> '+wd+' &nbsp; <strong>Kranktage:</strong> '+sd+'</div>' +
+    '<table><thead><tr><th>Datum</th><th>Wochentag</th><th>Beginn</th><th>Ende</th><th>Pause</th><th>Stunden</th><th>Anmerkung</th></tr></thead>' +
+    '<tbody>'+rows+'</tbody></table>' +
+    '<div class="tot"><span style="font-weight:700">GESAMTSTUNDEN '+MN[S.mo-1].toUpperCase()+' '+S.yr+'</span><span style="font-size:20px;font-weight:900">'+p.total+' Std.</span></div>' +
+    '<div style="font-size:10px;color:#888;margin-top:6px">Gearbeitet: '+p.worked+'h · EFZ (Krank/Feiertag): '+p.efz+'h</div>' +
+    '<div class="sig"><div>Mitarbeiter: ______________________</div><div>Arbeitgeber (Cango Transporte): ______________________</div></div>' +
+    '</body></html>');
+  w.document.close();
+  setTimeout(function() { w.print(); }, 400);
+}
+
+// ════════════════════════════════════════
+// U1 + BLITZER
+// ════════════════════════════════════════
+function dateRange(von, bis) {
+  var out = [];
+  var a = new Date(von + "T00:00:00");
+  var b = new Date(bis + "T00:00:00");
+  while (a <= b) {
+    var y = a.getFullYear();
+    var m = a.getMonth() + 1;
+    var d = a.getDate();
+    out.push(dateStr(y, m, d));
+    a.setDate(a.getDate() + 1);
+  }
+  return out;
+}
+
+function applyU1() {
+  var dId = +G("u1-dr").value;
+  var von = G("u1-von").value.trim();
+  var bis = G("u1-bis").value.trim();
+  var etg = G("u1-et").value === "ja";
+  if (!dId || !von || !bis) { alert("Bitte Fahrer, Von- und Bis-Datum ausfüllen."); return; }
+  if (von > bis) { alert("Von-Datum muss vor Bis-Datum liegen."); return; }
+  var dr = null;
+  for (var i = 0; i < S.dr.length; i++) { if (S.dr[i].id === dId) { dr = S.dr[i]; break; } }
+  if (!dr) return;
+
+  var dates = dateRange(von, bis);
+  var sickDates = etg ? dates.slice(1) : dates;
+
+  var byMonth = {}, sickByMonth = {};
+  dates.forEach(function(d) { var ym = d.slice(0,7); if (!byMonth[ym]) byMonth[ym] = []; byMonth[ym].push(d); });
+  sickDates.forEach(function(d) { var ym = d.slice(0,7); if (!sickByMonth[ym]) sickByMonth[ym] = []; sickByMonth[ym].push(d); });
+
+  Object.keys(sickByMonth).forEach(function(ym) {
+    var y = +ym.slice(0,4), m = +ym.slice(5,7);
+    var k = pk(dId, y, m);
+    if (!S.sk[k]) S.sk[k] = [];
+    sickByMonth[ym].forEach(function(d) { if (S.sk[k].indexOf(d) < 0) S.sk[k].push(d); });
+    S.pl[k] = genSched(dr, y, m);
+  });
+
+  if (etg && dates.length > 0) {
+    var fd = dates[0], ym2 = fd.slice(0,7), y2 = +ym2.slice(0,4), m2 = +ym2.slice(5,7), k2 = pk(dId, y2, m2);
+    if (S.sk[k2]) S.sk[k2] = S.sk[k2].filter(function(d) { return d !== fd; });
+    S.pl[k2] = genSched(dr, y2, m2);
+  }
+
+  var id = Math.random().toString(36).slice(2);
+  S.u1.push({id:id, dId:dId, name:dr.n, von:von, bis:bis, sd:sickDates.length, etg:etg, dates:dates, sickDates:sickDates, byMonth:byMonth, sickByMonth:sickByMonth, src:"Manuell"});
+
+  G("u1-von").value = "";
+  G("u1-bis").value = "";
+  render();
+  rDok();
+  alert("✓ " + dr.n + ": " + sickDates.length + " Kranktage eingetragen (" + von + " → " + bis + ")\nErster Tag gearbeitet: " + (etg ? "Ja" : "Nein") + "\nBetroffene Monate: " + Object.keys(sickByMonth).join(", "));
+}
+
+function rmU1(id) {
+  var entry = null;
+  for (var i = 0; i < S.u1.length; i++) { if (S.u1[i].id === id) { entry = S.u1[i]; break; } }
+  if (!entry) return;
+  var dr = null;
+  for (var i = 0; i < S.dr.length; i++) { if (S.dr[i].id === entry.dId) { dr = S.dr[i]; break; } }
+  Object.keys(entry.sickByMonth || {}).forEach(function(ym) {
+    var y = +ym.slice(0,4), m = +ym.slice(5,7), k = pk(entry.dId, y, m);
+    var ds = entry.sickByMonth[ym];
+    if (S.sk[k]) S.sk[k] = S.sk[k].filter(function(d) { return ds.indexOf(d) < 0; });
+    if (S.pl[k] && dr) S.pl[k] = genSched(dr, y, m);
+  });
+  S.u1 = S.u1.filter(function(x) { return x.id !== id; });
+  render();
+  rDok();
+}
+
+function applyBz() {
+  var dId = +G("bz-dr").value;
+  var date = G("bz-dat").value.trim();
+  if (!dId || !date) { alert("Bitte Fahrer und Datum ausfüllen."); return; }
+  var dr = null;
+  for (var i = 0; i < S.dr.length; i++) { if (S.dr[i].id === dId) { dr = S.dr[i]; break; } }
+  if (!dr) return;
+  var y = +date.slice(0,4), m = +date.slice(5,7), k = pk(dId, y, m);
+  if (!S.bz[k]) S.bz[k] = [];
+  if (S.bz[k].indexOf(date) < 0) S.bz[k].push(date);
+  S.pl[k] = genSched(dr, y, m);
+  var id = Math.random().toString(36).slice(2);
+  S.bzLog.push({id:id, dId:dId, name:dr.n, date:date});
+  G("bz-dat").value = "";
+  render();
+  rDok();
+  alert("✓ Blitzertag " + date + " für " + dr.n + " gesetzt.");
+}
+
+function rmBzLog(id) {
+  var entry = null;
+  for (var i = 0; i < S.bzLog.length; i++) { if (S.bzLog[i].id === id) { entry = S.bzLog[i]; break; } }
+  if (!entry) return;
+  var dr = null;
+  for (var i = 0; i < S.dr.length; i++) { if (S.dr[i].id === entry.dId) { dr = S.dr[i]; break; } }
+  var y = +entry.date.slice(0,4), m = +entry.date.slice(5,7), k = pk(entry.dId, y, m);
+  if (S.bz[k]) S.bz[k] = S.bz[k].filter(function(d) { return d !== entry.date; });
+  if (S.pl[k] && dr) S.pl[k] = genSched(dr, y, m);
+  S.bzLog = S.bzLog.filter(function(x) { return x.id !== id; });
+  render();
+  rDok();
+}
+
+function rmLohn(id) {
+  S.lohnLog = S.lohnLog.filter(function(x) { return x.id !== id; });
+  rDok();
+}
+
+// ════════════════════════════════════════
+// NEW DRIVER MODAL
+// ════════════════════════════════════════
+function updateMHint() {
+  var b = +G("mb").value;
+  var w = +G("mw").value || ML;
+  G("mhint").textContent = b ? "Max. " + Math.round(b/w*10)/10 + " Std./Mo · " + w.toFixed(2) + " €/Std." : "";
+}
+
+function addDriver() {
+  var n = G("mn").value.trim();
+  var b = +G("mb").value;
+  var w = +G("mw").value || null;
+  var ns = G("mns").checked;
+  var dw = +G("mdw").value || 5;
+  if (!n || !b) { alert("Name und Brutto sind Pflichtfelder."); return; }
+  if (w && w < ML && !confirm("Stundenlohn " + w + "€ liegt unter Mindestlohn " + ML + "€. Trotzdem?")) return;
+  var id = 0;
+  S.dr.forEach(function(x) { if (x.id > id) id = x.id; });
+  id++;
+  S.dr.push({id:id, n:n, b:b, w:w, ns:ns, dw:dw, on:true, mh:null});
+  G("mn").value = ""; G("mb").value = ""; G("mw").value = ""; G("mns").checked = false; G("mdw").value = "5";
+  G("mo").classList.remove("on");
+  render();
+}
+
+// ════════════════════════════════════════
+// API KEY
+// ════════════════════════════════════════
+function updateApiLbl() {
+  var lbl = G("api-lbl");
+  var btn = G("api-btn");
+  var k = localStorage.getItem("cango_api_key");
+  if (lbl) { lbl.textContent = k ? "✓ Hinterlegt" : "✕ Fehlt"; lbl.style.color = k ? "#22C55E" : "#EF4444"; }
+  if (btn) { btn.style.color = k ? "#22C55E" : "#EF4444"; btn.style.borderColor = k ? "rgba(34,197,94,.4)" : "rgba(239,68,68,.4)"; }
+}
+
+function doApiKey() {
+  var cur = localStorage.getItem("cango_api_key");
+  var v = prompt(cur ? "API-Key ändern (leer = behalten):" : "Anthropic API-Key eingeben:\n(platform.anthropic.com → API Keys → Create Key)");
+  if (v === null) return;
+  if (v.trim()) { localStorage.setItem("cango_api_key", v.trim()); updateApiLbl(); alert("✓ API-Key gespeichert!"); }
+}
+
+// ════════════════════════════════════════
+// AI DOCUMENT SCAN
+// ════════════════════════════════════════
+function matchDr(name) {
+  if (!name) return null;
+  var nl = name.toLowerCase().trim();
+  for (var i = 0; i < S.dr.length; i++) {
+    if (S.dr[i].n.toLowerCase() === nl) return S.dr[i];
+  }
+  for (var i = 0; i < S.dr.length; i++) {
+    var parts = S.dr[i].n.toLowerCase().split(" ");
+    for (var j = 0; j < parts.length; j++) {
+      if (parts[j].length > 2 && nl.indexOf(parts[j]) >= 0) return S.dr[i];
+    }
+  }
+  var words = nl.split(/\s+/).filter(function(w) { return w.length > 2; });
+  for (var i = 0; i < S.dr.length; i++) {
+    var dn = S.dr[i].n.toLowerCase();
+    for (var j = 0; j < words.length; j++) {
+      if (dn.indexOf(words[j]) >= 0) return S.dr[i];
+    }
+  }
+  return null;
+}
+
+function updateDocTypStyle() {
+  var isU1 = document.getElementById('dt-u1') && document.getElementById('dt-u1').checked;
+  var u1btn = document.getElementById('dt-u1-btn');
+  var lbtn = document.getElementById('dt-lohn-btn');
+  if (u1btn) {
+    u1btn.style.borderColor = isU1 ? "rgba(239,68,68,.8)" : "var(--bor)";
+    u1btn.style.background = isU1 ? "rgba(239,68,68,.15)" : "transparent";
+  }
+  if (lbtn) {
+    lbtn.style.borderColor = !isU1 ? "rgba(59,130,246,.8)" : "var(--bor)";
+    lbtn.style.background = !isU1 ? "rgba(59,130,246,.12)" : "transparent";
+  }
+}
+
+function scanDoc(file) {
+  var res = G("ai-res");
+  var apiKey = localStorage.getItem("cango_api_key") || "";
+
+  if (!apiKey) {
+    res.innerHTML = '<div style="background:var(--red2);border:1px solid rgba(239,68,68,.4);border-radius:9px;padding:14px">' +
+      '<div style="font-weight:800;color:#EF4444;margin-bottom:6px">⚠ API-Key fehlt</div>' +
+      '<div style="font-family:var(--mono);font-size:10px;color:var(--mut);margin-bottom:8px">Klicke links unten auf "🔑 API-Key verwalten".</div>' +
+      '<button onclick="doApiKey()" style="background:#EF4444;color:#fff;border:none;padding:8px 16px;border-radius:6px;font-weight:700;cursor:pointer;font-size:12px">🔑 API-Key eingeben</button>' +
+      '</div>';
+    return;
+  }
+
+  var isU1 = (document.querySelector('input[name="doctyp"]:checked') || {}).value === "u1";
+  var isPDF = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+  var imgType = file.type === "image/png" ? "image/png" : (file.type === "image/gif" ? "image/gif" : (file.type === "image/webp" ? "image/webp" : "image/jpeg"));
+
+  res.innerHTML = '<div style="background:var(--pur2);border:1px solid rgba(167,139,250,.3);border-radius:9px;padding:12px 14px;font-family:var(--mono);font-size:12px;color:var(--pur)">◈ KI liest Dokument aus...</div>';
+
+  var maxTok = 1500;
+  var prompt = isU1
+    ? 'Analysiere dieses deutsche Dokument (U1-Erstattungsumlage, Einzeln oder Sammeldatei).\n' +
+      'Extrahiere ALLE Mitarbeiter. Antworte NUR mit einem JSON-Array, kein Text davor oder danach:\n' +
+      '[{"name":"Vollstaendiger Name","sick_from":"YYYY-MM-DD","sick_to":"YYYY-MM-DD","first_day_worked":false,"daily_hours":null,"amount":null}]\n' +
+      'Feldbeschreibung:\n' +
+      '- sick_from / sick_to: Krankheitszeitraum als YYYY-MM-DD\n' +
+      '- first_day_worked: true wenn am ersten Krankheitstag noch gearbeitet wurde\n' +
+      '- daily_hours: die auf dem Formular angegebenen regelmaessigen Arbeitsstunden pro Tag (z.B. steht dort "6,0 Std/Tag" oder "regelmaessige Arbeitszeit 6 Stunden" → dann 6.0). Komma als Dezimaltrennzeichen in Punkt umwandeln. Wenn nicht angegeben: null\n' +
+      '- amount: Erstattungsbetrag falls vorhanden, sonst null\n' +
+      'Wenn nur ein Mitarbeiter: trotzdem Array mit einem Element.'
+    : 'Analysiere diese deutsche Lohnabrechnung (Einzelabrechnung oder Sammeldatei mit mehreren Mitarbeitern).\n' +
+      'Extrahiere ALLE Mitarbeiter. Antworte NUR mit einem JSON-Array, kein Text davor oder danach:\n' +
+      '[{"name":"Vollstaendiger Name","month":"1-12","year":"2026","hours":null,"gross":null,"wage":null,"unpaid_days":0}]\n' +
+      'Feldbeschreibung:\n' +
+      '- hours: tatsaechlich abgerechnete Arbeitsstunden dieses Monats (Zahl oder null)\n' +
+      '- gross: monatliches Bruttogehalt in Euro (Zahl, z.B. 2370)\n' +
+      '- wage: Stundenlohn in Euro falls erkennbar (Zahl oder null)\n' +
+      '- unpaid_days: Anzahl Tage unbezahlter Urlaub oder unbezahlte Fehlzeiten falls angegeben (0 wenn nicht vorhanden)\n' +
+      'Wenn nur ein Mitarbeiter: trotzdem Array mit einem Element zurueckgeben.';
+
+  var reader = new FileReader();
+  reader.onerror = function() {
+    res.innerHTML = '<div style="background:var(--red2);border:1px solid rgba(239,68,68,.4);border-radius:9px;padding:12px;font-family:var(--mono);font-size:11px;color:#EF4444">⚠ Fehler beim Lesen der Datei.</div>';
+  };
+  reader.onload = function(e) {
+    var b64 = e.target.result.split(",")[1];
+    var contentBlock = isPDF
+      ? {type:"document", source:{type:"base64", media_type:"application/pdf", data:b64}}
+      : {type:"image", source:{type:"base64", media_type:imgType, data:b64}};
+
+    fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true"
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6",
+        max_tokens: maxTok,
+        messages: [{
+          role: "user",
+          content: [contentBlock, {type:"text", text:prompt}]
+        }]
+      })
+    })
+    .then(function(resp) { return resp.json(); })
+    .then(function(data) {
+      if (data.error) {
+        res.innerHTML = '<div style="background:var(--red2);border:1px solid rgba(239,68,68,.4);border-radius:9px;padding:12px;font-family:var(--mono);font-size:11px;color:#EF4444">⚠ API Fehler: ' + E(data.error.message) + '</div>';
+        return;
+      }
+      var txt = "";
+      if (data.content) {
+        for (var i = 0; i < data.content.length; i++) {
+          if (data.content[i].type === "text") { txt = data.content[i].text; break; }
+        }
+      }
+      var parsedRaw = null;
+      try { parsedRaw = JSON.parse(txt.replace(/```json|```/g, "").trim()); } catch(err) {}
+
+      // Support both single object and array
+      var parsedArr = null;
+      if (parsedRaw) {
+        if (Array.isArray(parsedRaw)) parsedArr = parsedRaw;
+        else if (parsedRaw.name) parsedArr = [parsedRaw];
+      }
+
+      if (!parsedArr || parsedArr.length === 0) {
+        res.innerHTML = '<div style="background:var(--red2);border:1px solid rgba(239,68,68,.4);border-radius:9px;padding:12px">' +
+          '<div style="font-weight:700;color:#EF4444;margin-bottom:4px">⚠ Nicht erkannt</div>' +
+          '<div style="font-family:var(--mono);font-size:10px;color:var(--mut)">Bitte Daten manuell eingeben.</div>' +
+          '</div>';
+        return;
+      }
+
+      window._lastAiDoc = {parsedArr:parsedArr, isU1:isU1, src:file.name};
+
+      // Build preview for all found entries
+      var previewRows = parsedArr.map(function(parsed) {
+        var drM = matchDr(parsed.name);
+        if (isU1) {
+          return '<div style="background:var(--surf);border:1px solid var(--bor);border-radius:7px;padding:8px 10px;margin-bottom:6px;display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:6px;align-items:center">' +
+            '<div style="font-weight:700;font-size:11px;color:'+(drM?"#22C55E":"#EF4444")+'">'+E(parsed.name)+' '+(drM?"✓":"⚠")+'</div>' +
+            '<div style="font-family:var(--mono);font-size:10px;color:#EF4444">'+(parsed.sick_from||"?")+'</div>' +
+            '<div style="font-family:var(--mono);font-size:10px;color:#EF4444">→ '+(parsed.sick_to||"?")+'</div>' +
+            '<div style="font-family:var(--mono);font-size:10px;color:#F0A500">'+(parsed.first_day_worked?"1.Tag gearbeitet":"krank ab Tag 1")+'</div>' +
+            '<div style="font-family:var(--mono);font-size:10px;color:#A78BFA">'+(parsed.daily_hours!=null?parsed.daily_hours+"h/Tag":"auto")+'</div>' +
+            '</div>';
+        } else {
+          return '<div style="background:var(--surf);border:1px solid var(--bor);border-radius:7px;padding:8px 10px;margin-bottom:6px;display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:6px;align-items:center">' +
+            '<div style="font-weight:700;font-size:11px;color:'+(drM?"#22C55E":"#EF4444")+'">'+E(parsed.name)+' '+(drM?"✓":"⚠ unbekannt")+'</div>' +
+            '<div style="font-family:var(--mono);font-size:10px;color:#3B82F6">'+(parsed.month?MN[+parsed.month-1]:"")+' '+(parsed.year||"")+'</div>' +
+            '<div style="font-family:var(--mono);font-size:10px;color:#F0A500">'+(parsed.hours||"?")+'h</div>' +
+            '<div style="font-family:var(--mono);font-size:10px;color:#22C55E">'+(parsed.gross||"")+'€ brutto</div>' +
+            '</div>';
+        }
+      }).join("");
+
+      var headerRow = isU1
+        ? '<div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:6px;font-family:var(--mono);font-size:9px;color:var(--mut);letter-spacing:1px;margin-bottom:4px;padding:0 10px"><span>FAHRER</span><span>VON</span><span>BIS</span><span>ERSTER TAG</span><span>STD/TAG</span></div>'
+        : '<div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:6px;font-family:var(--mono);font-size:9px;color:var(--mut);letter-spacing:1px;margin-bottom:4px;padding:0 10px"><span>FAHRER</span><span>MONAT</span><span>STUNDEN</span><span>BRUTTO</span></div>';
+
+      res.innerHTML = '<div style="background:var(--pur2);border:1px solid rgba(167,139,250,.3);border-radius:10px;padding:13px">' +
+        '<div style="font-weight:700;font-size:12px;color:var(--pur);margin-bottom:8px">◈ ' + parsedArr.length + ' Einträge erkannt: ' + E(file.name) + '</div>' +
+        headerRow +
+        previewRows +
+        '<div id="ai-apply-res" style="margin-top:7px"></div>' +
+        '<button onclick="applyAiDoc()" style="width:100%;margin-top:9px;background:#A78BFA;color:#000;border:none;padding:9px;border-radius:7px;font-weight:800;font-size:12px;cursor:pointer">✓ Alle ' + parsedArr.length + ' Einträge übernehmen</button>' +
+        '</div>';
+    })
+    .catch(function(err) {
+      res.innerHTML = '<div style="background:var(--red2);border:1px solid rgba(239,68,68,.4);border-radius:9px;padding:12px;font-family:var(--mono);font-size:11px;color:#EF4444">⚠ Fehler: ' + E(String(err)) + '</div>';
+    });
+  };
+  reader.readAsDataURL(file);
+}
+
+function applyAiDoc() {
+  var doc = window._lastAiDoc;
+  if (!doc) return;
+  var parsedArr = doc.parsedArr, isU1 = doc.isU1, src = doc.src;
+  var ar = G("ai-apply-res");
+  if (!parsedArr || parsedArr.length === 0) return;
+
+  var results = [];
+  var errors = [];
+
+  parsedArr.forEach(function(parsed) {
+    if (isU1) {
+      var drA = matchDr(parsed.name);
+      if (!drA) { errors.push(E(parsed.name) + ": Fahrer nicht gefunden"); return; }
+      var vonA = parsed.sick_from, bisA = parsed.sick_to;
+      if (!vonA || !bisA) { errors.push(E(drA.n) + ": Kein Zeitraum"); return; }
+      var etgA = parsed.first_day_worked === true;
+      var datesA = dateRange(vonA, bisA);
+      var sickA = etgA ? datesA.slice(1) : datesA;
+      var sbmA = {};
+      sickA.forEach(function(d) { var ym = d.slice(0,7); if (!sbmA[ym]) sbmA[ym] = []; sbmA[ym].push(d); });
+      var bmA = {};
+      datesA.forEach(function(d) { var ym = d.slice(0,7); if (!bmA[ym]) bmA[ym] = []; bmA[ym].push(d); });
+      Object.keys(sbmA).forEach(function(ym) {
+        var y = +ym.slice(0,4), m = +ym.slice(5,7), k = pk(drA.id, y, m);
+        if (!S.sk[k]) S.sk[k] = [];
+        sbmA[ym].forEach(function(d) { if (S.sk[k].indexOf(d) < 0) S.sk[k].push(d); });
+        // Speichere tägliche Arbeitsstunden aus der Umlage
+        if (dailyHoursA) S.dh[k] = dailyHoursA;
+        S.pl[k] = genSched(drA, y, m);
+      });
+      if (etgA && datesA.length > 0) {
+        var fdA = datesA[0], ymA = fdA.slice(0,7), yA = +ymA.slice(0,4), mA = +ymA.slice(5,7), kA = pk(drA.id, yA, mA);
+        if (S.sk[kA]) S.sk[kA] = S.sk[kA].filter(function(d) { return d !== fdA; });
+        S.pl[kA] = genSched(drA, yA, mA);
+      }
+      var uidA = Math.random().toString(36).slice(2);
+      // Komma→Punkt fix für deutsche Zahlen (z.B. "6,0" → 6.0)
+      var dailyHoursA = null;
+      if (parsed.daily_hours != null && parsed.daily_hours !== "") {
+        var dhStr = String(parsed.daily_hours).replace(",", ".");
+        var dhVal = parseFloat(dhStr);
+        if (!isNaN(dhVal) && dhVal > 0 && dhVal <= 12) dailyHoursA = dhVal;
+      }
+      S.u1.push({id:uidA, dId:drA.id, name:drA.n, von:vonA, bis:bisA, sd:sickA.length, etg:etgA, dailyHours:dailyHoursA, dates:datesA, sickDates:sickA, byMonth:bmA, sickByMonth:sbmA, src:src});
+      var dhInfo = dailyHoursA ? " · " + dailyHoursA + "h/Tag aus Umlage" : "";
+      results.push("✓ " + E(drA.n) + ": " + sickA.length + " Kranktage (" + vonA + "→" + bisA + ")" + dhInfo);
+    } else {
+      var drB = matchDr(parsed.name);
+      if (!drB) { errors.push(E(parsed.name) + ": Fahrer nicht gefunden"); return; }
+      var changedB = [];
+      var needRegen = false;
+
+      // Bruttogehalt aktualisieren wenn geändert
+      if (parsed.gross && +parsed.gross > 0) {
+        var newGross = +parsed.gross;
+        if (Math.abs(newGross - drB.b) > 0.01) {
+          changedB.push("Brutto: " + drB.b + "€ → " + newGross + "€");
+          drB.b = newGross;
+          needRegen = true;
+        }
+      }
+
+      // Stundenlohn aktualisieren wenn geändert oder neu
+      if (parsed.wage && +parsed.wage > 0) {
+        var newWage = +parsed.wage;
+        var oldWage = drB.w || ML;
+        if (Math.abs(newWage - oldWage) > 0.01) {
+          changedB.push("Lohn: " + oldWage.toFixed(2) + "€ → " + newWage.toFixed(2) + "€/Std.");
+          drB.w = newWage;
+          needRegen = true;
+        }
+      }
+
+      // Alle bestehenden Pläne neu berechnen wenn Brutto/Lohn geändert
+      if (needRegen) regenDr(drB);
+
+      // Monatsstunden übernehmen
+      // Wenn unbezahlter Urlaub: Stunden um Urlaubstage × Tagesdurchschnitt kürzen
+      if (parsed.year && parsed.month) {
+        var kB = pk(drB.id, +parsed.year, +parsed.month);
+        var finalHours = null;
+        if (parsed.hours && +parsed.hours > 0) {
+          finalHours = +parsed.hours;
+          // Unbezahlter Urlaub bereits in hours enthalten — nutze direkt
+          changedB.push((MN[+parsed.month-1]||"") + " " + parsed.year + ": " + finalHours + "h");
+        } else if (parsed.unpaid_days && +parsed.unpaid_days > 0) {
+          // Keine Stunden, aber unbezahlte Tage angegeben → von Maximalstunden abziehen
+          var maxForMonth = drB.mh || Math.round(drB.b / (drB.w || ML) * 10) / 10;
+          var avgDayH = parseFloat((maxForMonth / 22).toFixed(1));
+          finalHours = parseFloat(Math.max(maxForMonth - (+parsed.unpaid_days * avgDayH), 0).toFixed(1));
+          changedB.push((MN[+parsed.month-1]||"") + " " + parsed.year + ": " + finalHours + "h (" + parsed.unpaid_days + " Tage unbez. Urlaub abgezogen)");
+        }
+        if (finalHours != null) {
+          S.tg[kB] = finalHours;
+          S.pl[kB] = genSched(drB, +parsed.year, +parsed.month);
+        }
+        // Unbezahlten Urlaub als Kranktage markieren damit keine Schichten eingeplant werden
+        if (parsed.unpaid_days && +parsed.unpaid_days > 0 && parsed.unpaid_from && parsed.unpaid_to) {
+          var ubDates = dateRange(parsed.unpaid_from, parsed.unpaid_to);
+          if (!S.sk[kB]) S.sk[kB] = [];
+          ubDates.forEach(function(d) { if (S.sk[kB].indexOf(d) < 0) S.sk[kB].push(d); });
+          S.pl[kB] = genSched(drB, +parsed.year, +parsed.month);
+        }
+      }
+
+      if (changedB.length === 0) changedB.push("keine Änderungen");
+      var lidB = Math.random().toString(36).slice(2);
+      S.lohnLog.push({id:lidB, name:drB.n, mo:(MN[(+parsed.month||1)-1]||"") + " " + (parsed.year||""), h:parsed.hours||"?", w:parsed.wage||"?", src:src});
+      results.push("✓ " + E(drB.n) + ": " + changedB.join(" · "));
+    }
+  });
+
+  var html = "";
+  if (results.length > 0) html += results.map(function(r) { return '<div style="color:#22C55E;font-family:var(--mono);font-size:11px">'+r+'</div>'; }).join("");
+  if (errors.length > 0) html += errors.map(function(e) { return '<div style="color:#EF4444;font-family:var(--mono);font-size:11px">⚠ '+e+'</div>'; }).join("");
+  ar.innerHTML = html;
+  render();
+  rDok();
+}
+
+
+
+// ════════════════════════════════════════
+// EVENT LISTENERS
+// ════════════════════════════════════════
+
+// Month selector init
+(function() {
+  var s = G("sm");
+  for (var i = 0; i < MN.length; i++) {
+    var o = document.createElement("option");
+    o.value = i + 1;
+    o.textContent = MN[i];
+    if (i + 1 === S.mo) o.selected = true;
+    s.appendChild(o);
+  }
+})();
+
+G("sm").addEventListener("change", function() { S.mo = +this.value; render(); });
+G("sy").addEventListener("change", function() { S.yr = +this.value; render(); });
+G("mb").addEventListener("input", updateMHint);
+G("mw").addEventListener("input", updateMHint);
+
+document.querySelectorAll(".nb").forEach(function(b) {
+  b.addEventListener("click", function() { goPage(b.dataset.pg); });
+});
+
+G("mo").addEventListener("click", function(e) {
+  if (e.target === this) this.classList.remove("on");
+});
+
+G("doc-input").addEventListener("change", function() {
+  if (this.files && this.files[0]) {
+    var fn = this.files[0].name.toLowerCase();
+    // Auto-detect: if filename contains lohn/abrechn/gehalt → switch to Lohnabrechnung
+    if (fn.includes("lohn") || fn.includes("abrechn") || fn.includes("gehalt") || fn.includes("payroll")) {
+      var lohnRadio = document.querySelector('input[name="doctyp"][value="lohn"]');
+      if (lohnRadio) lohnRadio.checked = true;
+    } else if (fn.includes("u1") || fn.includes("krank") || fn.includes("umlage") || fn.includes("erstatt")) {
+      var u1Radio = document.querySelector('input[name="doctyp"][value="u1"]');
+      if (u1Radio) u1Radio.checked = true;
+    }
+    scanDoc(this.files[0]);
+    this.value = "";
+  }
+});
+
+// ════════════════════════════════════════
+// LOCALSTORAGE PERSISTENCE
+// ════════════════════════════════════════
+var SAVE_KEY = "cango_state_v3";
+
+function exportBackup() {
+  saveState();
+  var data = localStorage.getItem(SAVE_KEY) || "{}";
+  var a = document.createElement("a");
+  var d = new Date();
+  var dateStr = d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+  a.href = URL.createObjectURL(new Blob([data], {type:"application/json"}));
+  a.download = "cango-backup-" + dateStr + ".json";
+  a.click();
+}
+
+function importBackup() {
+  var inp = document.createElement("input");
+  inp.type = "file";
+  inp.accept = ".json";
+  inp.onchange = function() {
+    if (!inp.files || !inp.files[0]) return;
+    var r = new FileReader();
+    r.onload = function(e) {
+      try {
+        localStorage.setItem(SAVE_KEY, e.target.result);
+        loadState();
+        var sm = G("sm"); var sy = G("sy");
+        if (sm) { for (var i=0; i<sm.options.length; i++) sm.options[i].selected = (+sm.options[i].value === S.mo); }
+        if (sy) { for (var i=0; i<sy.options.length; i++) sy.options[i].selected = (+sy.options[i].value === S.yr); }
+        render();
+        alert("✓ Backup erfolgreich geladen!");
+      } catch(err) { alert("Fehler beim Laden: " + err); }
+    };
+    r.readAsText(inp.files[0]);
+  };
+  inp.click();
+}
+
+function saveState() {
+  try {
+    var data = {
+      yr: S.yr, mo: S.mo,
+      dr: S.dr,
+      sk: S.sk, bz: S.bz, tg: S.tg, dh: S.dh, me: S.me,
+      u1: S.u1, bzLog: S.bzLog, lohnLog: S.lohnLog
+    };
+    localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+    var lbl = G("save-lbl");
+    if (lbl) {
+      var t = new Date();
+      lbl.textContent = "✓ Gespeichert " + String(t.getHours()).padStart(2,"0") + ":" + String(t.getMinutes()).padStart(2,"0");
+      lbl.style.color = "#22C55E";
+      setTimeout(function() { if (lbl) { lbl.style.color = "var(--dim)"; } }, 3000);
+    }
+  } catch(e) { console.warn("Speichern fehlgeschlagen:", e); }
+}
+
+function loadState() {
+  try {
+    var raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return;
+    var data = JSON.parse(raw);
+    if (data.dr && data.dr.length > 0) S.dr = data.dr;
+    if (data.sk) S.sk = data.sk;
+    if (data.bz) S.bz = data.bz;
+    if (data.tg) S.tg = data.tg;
+    if (data.dh) S.dh = data.dh;
+    if (data.me) S.me = data.me;
+    if (data.u1) S.u1 = data.u1;
+    if (data.bzLog) S.bzLog = data.bzLog;
+    if (data.lohnLog) S.lohnLog = data.lohnLog;
+    if (data.yr) S.yr = data.yr;
+    if (data.mo) S.mo = data.mo;
+    // Ensure all drivers have dw field
+    S.dr.forEach(function(d) { if (!d.dw) d.dw = 5; });
+    console.log("Daten geladen:", S.dr.length, "Fahrer");
+  } catch(e) { console.warn("Laden fehlgeschlagen:", e); }
+}
+
+// Auto-save nach jeder Aktion (debounced)
+var _saveTimer = null;
+function autoSave() {
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(saveState, 800);
+}
+
+// Alle state-ändernden Funktionen wrappen
+var _origRender = render;
+render = function() { _origRender(); autoSave(); };
+var _origGenAll = genAll;
+genAll = function() { _origGenAll(); autoSave(); };
+
+// ════════════════════════════════════════
+// PWA MANIFEST (inline, kein Server nötig)
+// ════════════════════════════════════════
+(function() {
+  var manifest = {
+    name: "Cango Stundenzettel",
+    short_name: "Cango",
+    description: "Arbeitszeitnachweis für Cango Transporte",
+    start_url: ".",
+    display: "standalone",
+    background_color: "#0B0E14",
+    theme_color: "#0B0E14",
+    orientation: "portrait-primary",
+    icons: [
+      {src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' fill='%230B0E14' rx='32'/%3E%3Ccircle cx='96' cy='96' r='80' fill='none' stroke='%23F0A500' stroke-width='6'/%3E%3Ctext x='96' y='115' font-size='72' text-anchor='middle' fill='%23F0A500' font-family='Arial'%3EC%3C/text%3E%3C/svg%3E", sizes: "192x192", type: "image/svg+xml"},
+      {src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' fill='%230B0E14' rx='80'/%3E%3Ccircle cx='256' cy='256' r='210' fill='none' stroke='%23F0A500' stroke-width='14'/%3E%3Ctext x='256' y='310' font-size='200' text-anchor='middle' fill='%23F0A500' font-family='Arial'%3EC%3C/text%3E%3C/svg%3E", sizes: "512x512", type: "image/svg+xml"}
+    ]
+  };
+  var blob = new Blob([JSON.stringify(manifest)], {type:"application/json"});
+  var url = URL.createObjectURL(blob);
+  var link = document.getElementById("pwa-manifest");
+  if (link) link.href = url;
+})();
+
+// ════════════════════════════════════════
+// SERVICE WORKER (Offline-Cache)
+// ════════════════════════════════════════
+(function() {
+  if (!navigator.serviceWorker) return;
+  var swCode = [
+    "var CACHE = 'cango-v3';",
+    "self.addEventListener('install', function(e) {",
+    "  e.waitUntil(caches.open(CACHE).then(function(c) {",
+    "    return c.addAll(['./', './index.html']);",
+    "  }));",
+    "  self.skipWaiting();",
+    "});",
+    "self.addEventListener('fetch', function(e) {",
+    "  e.respondWith(caches.match(e.request).then(function(r) {",
+    "    return r || fetch(e.request).catch(function() { return caches.match('./'); });",
+    "  }));",
+    "});"
+  ].join("\n");
+  var blob = new Blob([swCode], {type:"application/javascript"});
+  var url = URL.createObjectURL(blob);
+  navigator.serviceWorker.register(url).catch(function() {});
+})();
+
+// ════════════════════════════════════════
+// BOOT
+// ════════════════════════════════════════
+loadState();
+// Sync month/year dropdowns to loaded state
+(function() {
+  var sm = G("sm"); var sy = G("sy");
+  if (sm) { for (var i=0; i<sm.options.length; i++) { sm.options[i].selected = (+sm.options[i].value === S.mo); } }
+  if (sy) { for (var i=0; i<sy.options.length; i++) { sy.options[i].selected = (+sy.options[i].value === S.yr); } }
+})();
+updateApiLbl();
+updateDocTypStyle();
+render();
+</script>
+</body>
+</html>
